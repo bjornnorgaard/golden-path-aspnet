@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Platform.Configurations;
 
@@ -9,7 +8,6 @@ public static class OpenApiConfiguration
     {
         public void AddPlatformOpenApi()
         {
-            builder.Services.AddOpenApi();
         }
     }
 
@@ -17,7 +15,6 @@ public static class OpenApiConfiguration
     {
         public void MapPlatformOpenApi()
         {
-            app.MapOpenApi();
         }
     }
 }

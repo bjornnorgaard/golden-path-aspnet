@@ -1,15 +1,15 @@
 using System.Text.Json.Serialization;
+using Generators;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Platform;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
-builder.AddPlatform();
+builder.Services.AddOpenApi();
 
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));
 
 var app = builder.Build();
-app.UsePlatform();
+app.MapOpenApi();
 
 Todo[] sampleTodos =
 [
@@ -32,7 +32,10 @@ todosApi.MapGet("/{id}", Results<Ok<Todo>, NotFound> (int id) =>
 
 app.Run();
 
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
+[StrongId(underlying: "System.Int32")]
+public readonly partial struct TodoId;
+
+public record Todo(TodoId Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
 
 [JsonSerializable(typeof(Todo[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
