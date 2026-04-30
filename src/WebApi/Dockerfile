@@ -1,4 +1,5 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+ARG APP_UID=1000
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
@@ -7,17 +8,17 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["GoldenPathAspnet.WebApi/GoldenPathAspnet.WebApi.csproj", "GoldenPathAspnet.WebApi/"]
-RUN dotnet restore "GoldenPathAspnet.WebApi/GoldenPathAspnet.WebApi.csproj"
+COPY ["WebApi/WebApi.csproj", "WebApi/"]
+RUN dotnet restore "WebApi/WebApi.csproj"
 COPY . .
-WORKDIR "/src/GoldenPathAspnet.WebApi"
-RUN dotnet build "./GoldenPathAspnet.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/WebApi"
+RUN dotnet build "./WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./GoldenPathAspnet.WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./WebApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false /p:PublishAot=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "GoldenPathAspnet.WebApi.dll"]
+ENTRYPOINT ["dotnet", "WebApi.dll"]
