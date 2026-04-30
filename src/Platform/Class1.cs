@@ -1,5 +1,10 @@
-﻿namespace Platform;
+﻿using Microsoft.AspNetCore.Builder;
 
-public class Class1
+namespace Platform;
+
+public static class BuilderExtensions
 {
+    public static void AddPlatform(this WebApplicationBuilder builder)
+    {
+    }
 }
