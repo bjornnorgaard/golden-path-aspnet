@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -5,6 +6,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Generators;
+
+[AttributeUsage(AttributeTargets.Struct)]
+public sealed class StrongIdAttribute(string underlying = "System.Guid") : Attribute
+{
+    public string Underlying { get; } = underlying;
+}
 
 [Generator]
 public class StrongIdGenerator : IIncrementalGenerator
