@@ -1,0 +1,7 @@
+﻿services:
+  goldenpathaspnet.webapi:
+    image: goldenpathaspnet.webapi
+    build:
+      context: .
+      dockerfile: GoldenPathAspnet.WebApi/Dockerfile
+
