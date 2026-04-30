@@ -1,4 +1,4 @@
 <Solution>
-  <Folder Name="/Solution Items/" />
+  <Project Path="Platform/Platform.csproj"/>
   <Project Path="WebApi\WebApi.csproj" />
 </Solution>
