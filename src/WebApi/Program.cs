@@ -1,38 +1,31 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Platform.Annotations;
+using Microsoft.EntityFrameworkCore;
+using WebApi.Database;
+using WebApi.Database.Models;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.RegisterGeneratedServices();
 
-builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));
+var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<TodoContext>(opts => opts.UseNpgsql(cs));
+
+builder.Services.ConfigureHttpJsonOptions(opts => opts.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));
 
 var app = builder.Build();
 app.MapOpenApi();
 
-Todo[] sampleTodos =
-[
-    new(TodoId.New(), "Walk the dog"),
-    new(TodoId.New(), "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-    new(TodoId.New(), "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-    new(TodoId.New(), "Clean the bathroom"),
-    new(TodoId.New(), "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-];
-
 var todosApi = app.MapGroup("/todos");
-todosApi.MapGet("/", () => sampleTodos)
-    .WithName("GetTodos");
-
-todosApi.MapGet("/{id}", Results<Ok<Todo>, NotFound> (string id) =>
+todosApi.MapGet("/{id}", async Task<Results<Ok<Todo>, NotFound>> (string id, TodoContext db) =>
     {
         if (!TodoId.TryParse(id, out var parsedId))
         {
             return TypedResults.NotFound();
         }
 
-        var todo = sampleTodos.FirstOrDefault(a => a.Id == parsedId);
+        var todo = await db.Todos.AsNoTracking().FirstOrDefaultAsync(a => a.Id == parsedId);
         if (todo == null)
         {
             return TypedResults.NotFound();
@@ -43,11 +36,6 @@ todosApi.MapGet("/{id}", Results<Ok<Todo>, NotFound> (string id) =>
     .WithName("GetTodoById");
 
 app.Run();
-
-[StrongId]
-public readonly partial struct TodoId;
-
-public record Todo(TodoId Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
 
 [JsonSerializable(typeof(Todo[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
