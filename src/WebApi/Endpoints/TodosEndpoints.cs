@@ -14,10 +14,7 @@ public static class TodosEndpoints
         return app;
     }
 
-    private static async Task<Results<
-            Ok<GetTodo.Result>,
-            NotFound>
-    > GetTodoById(string id, GetTodo.Handler handler, CancellationToken ct)
+    private static async Task<Results<Ok<GetTodo.Result>, NotFound>> GetTodoById(string id, GetTodo.Handler handler, CancellationToken ct)
     {
         if (!TodoId.TryParse(id, out var parsedId))
         {
