@@ -9,8 +9,7 @@ public static class TodosEndpoints
     public static IEndpointRouteBuilder MapTodos(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/todos");
-        group.MapGet("/{id}", GetTodoById)
-            .WithName("GetTodoById");
+        group.MapGet("/{id}", GetTodoById).WithName("GetTodoById");
         return app;
     }
 
