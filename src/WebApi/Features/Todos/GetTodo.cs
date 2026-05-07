@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
 
@@ -19,6 +20,7 @@ public class GetTodo
         public bool IsComplete { get; init; }
     }
 
+    [Service(lifetime: ServiceLifetime.Transient, asSelf: true)]
     public class Handler(TodoContext context)
     {
         public async Task<Result?> Handle(Request req, CancellationToken ct)
