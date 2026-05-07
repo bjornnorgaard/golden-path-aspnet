@@ -5,6 +5,7 @@ using Platform.Annotations;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.RegisterGeneratedServices();
 
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default));
 

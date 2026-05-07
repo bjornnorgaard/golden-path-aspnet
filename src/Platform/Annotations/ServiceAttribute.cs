@@ -7,4 +7,5 @@ public sealed class ServiceAttribute(ServiceLifetime lifetime, bool asSelf = fal
 {
     public ServiceLifetime Lifetime { get; } = lifetime;
     public bool AsSelf { get; } = asSelf;
+    public Type? As { get; set; }
 }
