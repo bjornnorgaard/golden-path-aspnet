@@ -233,9 +233,19 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 _ => $"        app.MapMethods(@\"{Escape(ep.Route)}\", new[] {{ \"POST\" }}, {target})"
             };
 
-            mapCall += $".WithName(@\"{Escape(ep.Name)}\")";
+            var mapCallBuilder = new StringBuilder(mapCall);
+            mapCallBuilder.AppendLine();
+            mapCallBuilder.Append($"            .WithName(@\"{Escape(ep.Name)}\")");
+            if (ep.IsFeature && !string.IsNullOrWhiteSpace(ep.ResponseBodyType))
+            {
+                mapCallBuilder.AppendLine();
+                mapCallBuilder.Append($"            .Produces<{ep.ResponseBodyType}>(StatusCodes.Status200OK, \"application/json\")");
 
-            sb.AppendLine(mapCall + ";");
+                mapCallBuilder.AppendLine();
+                mapCallBuilder.Append("            .Produces<global::WebApi.Features.Failure>(StatusCodes.Status400BadRequest, \"application/json\")");
+            }
+
+            sb.AppendLine(mapCallBuilder + ";");
         }
 
         sb.AppendLine("        return app;");

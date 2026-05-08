@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using WebApi.Database.Models;
+using WebApi.Features;
 using WebApi.Features.Todos;
 
 namespace WebApi.Json;
@@ -15,4 +16,5 @@ namespace WebApi.Json;
 [JsonSerializable(typeof(GetTodoList.ResponseBody), TypeInfoPropertyName = "GetTodoListResponseBody")]
 [JsonSerializable(typeof(UpdateTodo.RequestBody), TypeInfoPropertyName = "UpdateTodoRequestBody")]
 [JsonSerializable(typeof(UpdateTodo.ResponseBody), TypeInfoPropertyName = "UpdateTodoResponseBody")]
+[JsonSerializable(typeof(Failure))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext;
