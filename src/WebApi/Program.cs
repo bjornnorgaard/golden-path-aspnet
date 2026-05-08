@@ -14,11 +14,8 @@ builder.Services.AddOpenApi();
 builder.Services.RegisterGeneratedServices();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-builder.Services.AddDbContext<TodoContext>((sp, opts) =>
-{
-    var cs = sp.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
-    opts.UseNpgsql(cs);
-});
+var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<TodoContext>((_, opts) => opts.UseNpgsql(cs));
 builder.Services.ConfigureHttpJsonOptions(opts =>
 {
     opts.SerializerOptions.Converters.Add(new TodoIdJsonConverter());
