@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using FluentValidation;
 using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
 using WebApi.Endpoints;
+using WebApi.Telemetry;
 
 namespace WebApi.Features.Todos;
 
@@ -79,6 +81,8 @@ public class CreateTodo
                 DueBy = cmd.DueBy,
                 IsComplete = false
             };
+
+            Activity.Current?.SetTodoId(dbTodo.Id);
 
             await context.Todos.AddAsync(dbTodo, ct);
             await context.SaveChangesAsync(ct);

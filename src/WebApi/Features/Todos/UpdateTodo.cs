@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
 using WebApi.Endpoints;
+using WebApi.Telemetry;
 
 namespace WebApi.Features.Todos;
 
@@ -80,6 +82,8 @@ public class UpdateTodo
     {
         public async Task<Outcome<Result>> Handle(Command cmd, CancellationToken ct)
         {
+            Activity.Current?.SetTodoId(cmd.Id);
+
             var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == cmd.Id, ct);
             if (todo == null)
             {
