@@ -27,4 +27,9 @@
         <ProjectReference Include="..\Generators\Generators\Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
+  <ItemGroup>
+    <!-- Only the base appsettings.json participates in source-generated schema -->
+    <AdditionalFiles Include="appsettings.json" />
+  </ItemGroup>
+
 </Project>
