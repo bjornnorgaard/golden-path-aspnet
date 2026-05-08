@@ -27,7 +27,7 @@ public class CreateTodo : IFeature<CreateTodo.Request, CreateTodo.Result, Create
     {
         public Validator()
         {
-            RuleFor(x => x.Title).NotEmpty();
+            RuleFor(x => x.Title).NotEmpty().MinimumLength(3);
         }
     }
 
