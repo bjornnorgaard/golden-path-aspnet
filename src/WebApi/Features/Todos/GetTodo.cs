@@ -9,7 +9,7 @@ namespace WebApi.Features.Todos;
 
 [Endpoint(Routes.Todos.GetById, EndpointMethod.Post)]
 public class GetTodo
-    : IFeature<GetTodo.RequestBody, GetTodo.ResponseBody, GetTodo.Command, GetTodo.Result?, GetTodo.Handler>
+    : IFeature<GetTodo.RequestBody, GetTodo.ResponseBody, GetTodo.Command, GetTodo.Result, GetTodo.Handler>
 {
     public class RequestBody
     {
@@ -24,6 +24,7 @@ public class GetTodo
         public bool IsComplete { get; init; }
     }
 
+    // ReSharper disable once UnusedType.Global
     public sealed class Validator : AbstractValidator<RequestBody>
     {
         public Validator()
@@ -47,16 +48,14 @@ public class GetTodo
 
     public static Command MapToCommand(RequestBody request)
     {
-        return new Command { Id = TodoId.MustParse(request.Id) };
+        return new Command
+        {
+            Id = TodoId.MustParse(request.Id)
+        };
     }
 
-    public static ResponseBody MapToResponseBody(Result? result)
+    public static ResponseBody MapToResponseBody(Result result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
-
         return new ResponseBody
         {
             Id = result.Id,
@@ -66,21 +65,24 @@ public class GetTodo
         };
     }
 
-    [Service(lifetime: ServiceLifetime.Transient, asSelf: true)]
+    [Service(lifetime: ServiceLifetime.Transient)]
     public class Handler(TodoContext context)
     {
-        public async Task<Result?> Handle(Command cmd, CancellationToken ct)
+        public async Task<Outcome<Result>> Handle(Command cmd, CancellationToken ct)
         {
             var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == cmd.Id, ct);
-            if (todo == null) return null;
+            if (todo == null)
+            {
+                return Outcome<Result>.NotFound("Todo was not found.");
+            }
 
-            return new Result
+            return Outcome<Result>.Ok(new Result
             {
                 Id = todo.Id,
                 Title = todo.Title,
                 DueBy = todo.DueBy,
                 IsComplete = todo.IsComplete
-            };
+            });
         }
     }
 }

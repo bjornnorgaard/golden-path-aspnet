@@ -24,6 +24,7 @@ public class CreateTodo
         public bool IsComplete { get; init; }
     }
 
+    // ReSharper disable once UnusedType.Global
     public sealed class Validator : AbstractValidator<RequestBody>
     {
         public Validator()
@@ -46,26 +47,30 @@ public class CreateTodo
         public bool IsComplete { get; init; }
     }
 
-    public static Command MapToCommand(RequestBody request) =>
-        new()
+    public static Command MapToCommand(RequestBody request)
+    {
+        return new Command
         {
             Title = request.Title,
             DueBy = request.DueBy
         };
+    }
 
-    public static ResponseBody MapToResponseBody(Result result) =>
-        new()
+    public static ResponseBody MapToResponseBody(Result result)
+    {
+        return new ResponseBody
         {
             Id = result.Id,
             Title = result.Title,
             DueBy = result.DueBy,
             IsComplete = result.IsComplete
         };
+    }
 
-    [Service(lifetime: ServiceLifetime.Transient, asSelf: true)]
+    [Service(lifetime: ServiceLifetime.Transient)]
     public class Handler(TodoContext context)
     {
-        public async Task<Result> Handle(Command cmd, CancellationToken ct)
+        public async Task<Outcome<Result>> Handle(Command cmd, CancellationToken ct)
         {
             var dbTodo = new Todo
             {
@@ -78,13 +83,13 @@ public class CreateTodo
             await context.Todos.AddAsync(dbTodo, ct);
             await context.SaveChangesAsync(ct);
 
-            return new Result
+            return Outcome<Result>.Ok(new Result
             {
                 Id = dbTodo.Id,
                 Title = dbTodo.Title,
                 DueBy = dbTodo.DueBy,
                 IsComplete = dbTodo.IsComplete
-            };
+            });
         }
     }
 }

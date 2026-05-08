@@ -71,7 +71,7 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                     var handlerType = featureContract.TypeArguments[4] as INamedTypeSymbol;
                     if (handlerType == null) return null;
 
-                    // require Handler.Handle(TCommand, CancellationToken) returning Task<TResult> or Task<TResult?>
+                    // require Handler.Handle(TCommand, CancellationToken)
                     var handleMethod = handlerType.GetMembers("Handle")
                         .OfType<IMethodSymbol>()
                         .FirstOrDefault(m =>
@@ -81,11 +81,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                             m.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ==
                             "global::System.Threading.CancellationToken");
                     if (handleMethod == null) return null;
-
-                    var returnsNullableResult = IsTaskOfT(handleMethod.ReturnType, out var taskInner) &&
-                                                taskInner != null &&
-                                                (handleMethod.ReturnType.NullableAnnotation == NullableAnnotation.Annotated ||
-                                                 taskInner.NullableAnnotation == NullableAnnotation.Annotated);
 
                     var handlerDisplay = handlerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     var requestBodyDisplay = requestBodyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -101,7 +96,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                         responseBodyType: responseBodyDisplay,
                         commandType: commandDisplay,
                         resultType: resultDisplay,
-                        resultCanBeNull: returnsNullableResult,
                         route: route,
                         method: methodValue,
                         name: endpointName
@@ -196,23 +190,26 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             sb.AppendLine("        }");
             sb.AppendLine();
             sb.AppendLine($"        var cmd = {ep.FeatureType}.MapToCommand(req);");
-            sb.AppendLine("        var result = await handler.Handle(cmd, ct).ConfigureAwait(false);");
-            if (ep.ResultCanBeNull)
-            {
-                sb.AppendLine("        if (result is null)");
-                sb.AppendLine("        {");
-                sb.AppendLine("            return TypedResults.NotFound();");
-                sb.AppendLine("        }");
-                sb.AppendLine();
-                sb.AppendLine($"        var body = {ep.FeatureType}.MapToResponseBody(result);");
-                sb.AppendLine("        return TypedResults.Ok(body);");
-            }
-            else
-            {
-                sb.AppendLine();
-                sb.AppendLine($"        var body = {ep.FeatureType}.MapToResponseBody(result);");
-                sb.AppendLine("        return TypedResults.Ok(body);");
-            }
+            sb.AppendLine("        var outcome = await handler.Handle(cmd, ct).ConfigureAwait(false);");
+            sb.AppendLine("        switch (outcome.Status)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            case global::System.Net.HttpStatusCode.OK:");
+            sb.AppendLine("            {");
+            sb.AppendLine("                // Contract: Ok implies Value is present.");
+            sb.AppendLine($"                var body = {ep.FeatureType}.MapToResponseBody(outcome.Value!);");
+            sb.AppendLine("                return TypedResults.Ok(body);");
+            sb.AppendLine("            }");
+            sb.AppendLine("            case global::System.Net.HttpStatusCode.NotFound:");
+            sb.AppendLine("                return TypedResults.NotFound(outcome.Failure);");
+            sb.AppendLine("            case global::System.Net.HttpStatusCode.Conflict:");
+            sb.AppendLine("                return TypedResults.Conflict(outcome.Failure);");
+            sb.AppendLine("            case global::System.Net.HttpStatusCode.BadRequest:");
+            sb.AppendLine("                return TypedResults.BadRequest(outcome.Failure);");
+            sb.AppendLine("            default:");
+            sb.AppendLine("                return Results.Problem(");
+            sb.AppendLine("                    statusCode: (int)outcome.Status,");
+            sb.AppendLine("                    detail: outcome.Failure?.Message);");
+            sb.AppendLine("        }");
 
             sb.AppendLine("    }");
         }
@@ -241,20 +238,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static bool IsTaskOfT(ITypeSymbol type, out ITypeSymbol? inner)
-    {
-        inner = null;
-        if (type is not INamedTypeSymbol named) return false;
-        if (named.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) !=
-            "global::System.Threading.Tasks.Task<T>")
-        {
-            return false;
-        }
-
-        inner = named.TypeArguments.Length == 1 ? named.TypeArguments[0] : null;
-        return inner != null;
-    }
-
     private sealed class EndpointModel
     {
         private EndpointModel(
@@ -267,7 +250,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             string? responseBodyType,
             string? commandType,
             string? resultType,
-            bool resultCanBeNull,
             string route,
             int method,
             string name)
@@ -281,7 +263,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             ResponseBodyType = responseBodyType;
             CommandType = commandType;
             ResultType = resultType;
-            ResultCanBeNull = resultCanBeNull;
             Route = route;
             Method = method;
             Name = name;
@@ -298,7 +279,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 responseBodyType: null,
                 commandType: null,
                 resultType: null,
-                resultCanBeNull: false,
                 route: route,
                 method: method,
                 name: name
@@ -312,7 +292,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             string responseBodyType,
             string commandType,
             string resultType,
-            bool resultCanBeNull,
             string route,
             int method,
             string name) =>
@@ -326,7 +305,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 responseBodyType: responseBodyType,
                 commandType: commandType,
                 resultType: resultType,
-                resultCanBeNull: resultCanBeNull,
                 route: route,
                 method: method,
                 name: name
@@ -341,7 +319,6 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
         public string? ResponseBodyType { get; }
         public string? CommandType { get; }
         public string? ResultType { get; }
-        public bool ResultCanBeNull { get; }
         public string Route { get; }
         public int Method { get; }
         public string Name { get; }
