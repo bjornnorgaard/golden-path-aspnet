@@ -15,6 +15,14 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
 {
     private const string AppSettingsFileName = "appsettings.json";
 
+    private static readonly DiagnosticDescriptor AppSettingsFileNotFound = new(
+        id: "GP1000",
+        title: "Missing appsettings.json for configuration generation",
+        messageFormat: "No '{0}' was provided to the source generator. Add '<AdditionalFiles Include=\"appsettings.json\" />' to the project file.",
+        category: "GoldenPath.Configuration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly DiagnosticDescriptor NullValueNotAllowed = new(
         id: "GP1001",
         title: "Null configuration values are not allowed",
@@ -43,6 +51,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
 
             if (string.IsNullOrWhiteSpace(file.text))
             {
+                ctx.ReportDiagnostic(Diagnostic.Create(AppSettingsFileNotFound, location: null, AppSettingsFileName));
                 return;
             }
 
@@ -312,6 +321,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
             EmitValidatorForType(sb, rootNamespace, schema, section.TypeName, section.TypeFullName);
             sb.AppendLine();
         }
+
         sb.AppendLine("}");
         return sb.ToString();
     }
@@ -540,6 +550,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
                     {
                         stack.Push(($"{path}:{p.Name}", p.Value));
                     }
+
                     break;
                 case JsonValueKind.Array:
                     var idx = 0;
@@ -548,6 +559,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
                         stack.Push(($"{path}[{idx}]", item));
                         idx++;
                     }
+
                     break;
             }
         }
@@ -580,4 +592,3 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         public string JsonPath { get; } = jsonPath;
     }
 }
-

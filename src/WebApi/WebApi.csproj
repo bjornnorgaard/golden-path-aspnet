@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Only the base appsettings.json participates in source-generated schema -->
+        <!-- Needed to source-generated types for configuration -->
         <AdditionalFiles Include="appsettings.json"/>
     </ItemGroup>
 
