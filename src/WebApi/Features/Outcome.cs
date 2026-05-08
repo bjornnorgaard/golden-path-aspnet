@@ -46,4 +46,9 @@ public readonly struct Outcome<T>
     {
         return Fail(HttpStatusCode.Conflict, message, details);
     }
+
+    public static Outcome<T> InternalServerError(string message, object? details = null)
+    {
+        return Fail(HttpStatusCode.InternalServerError, message, details);
+    }
 }
