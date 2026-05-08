@@ -6,7 +6,7 @@ namespace WebApi.Endpoints.Todos;
 
 public static class CreateTodoEndpoint
 {
-    public static async Task<Results<Created<GetTodo.Result>, BadRequest>> Handle(
+    public static async Task<Results<Ok<GetTodo.Result>, BadRequest>> Handle(
         [FromBody] CreateTodo.Request req,
         CreateTodo.Handler handler,
         HttpContext httpContext,
@@ -20,8 +20,7 @@ public static class CreateTodoEndpoint
         var created = await handler.Handle(req, ct);
 
         // Avoid relying on StrongId JSON shape; Location must be a plain string route.
-        var location = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}{Routes.Todos.Create}/{created.Id.Value}";
-        return TypedResults.Created(location, new GetTodo.Result
+        return TypedResults.Ok(new GetTodo.Result
         {
             Id = created.Id,
             Title = created.Title,

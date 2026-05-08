@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using WebApi.Database.Models;
 using WebApi.Features.Todos;
 
@@ -6,12 +7,17 @@ namespace WebApi.Endpoints.Todos;
 
 public static class GetTodoByIdEndpoint
 {
+    public class Request
+    {
+        public required string Id { get; init; }
+    }
+
     public static async Task<Results<Ok<GetTodo.Result>, NotFound>> Handle(
-        string id,
+        [FromBody] Request req,
         GetTodo.Handler handler,
         CancellationToken ct)
     {
-        if (!TodoId.TryParse(id, out var parsedId))
+        if (!TodoId.TryParse(req.Id, out var parsedId))
         {
             return TypedResults.NotFound();
         }
