@@ -13,6 +13,16 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
 {
     private const string AttrFqn = "Platform.Annotations.EndpointAttribute";
     private const string EndpointMethodEnumFqn = "Platform.Annotations.EndpointMethod";
+    private const string WebApiJsonContextFqn = "WebApi.Json.AppJsonSerializerContext";
+    private const string JsonSerializableAttrFqn = "System.Text.Json.Serialization.JsonSerializableAttribute";
+
+    private static readonly DiagnosticDescriptor MissingJsonSerializableTypes = new(
+        id: "GP2001",
+        title: "Missing System.Text.Json source generation metadata",
+        messageFormat: "Add [JsonSerializable(typeof({0}))] to '{1}' to support endpoint JSON serialization without reflection.",
+        category: "GoldenPath.Json",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -105,8 +115,11 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
 
         var collected = candidates.Collect();
 
-        context.RegisterSourceOutput(collected, (ctx, batch) =>
+        var combined = context.CompilationProvider.Combine(collected);
+
+        context.RegisterSourceOutput(combined, (ctx, t) =>
         {
+            var (compilation, batch) = t;
             var models = batch
                 .Where(static m => m != null)
                 .Select(static m => m!)
@@ -119,8 +132,68 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 return;
             }
 
+            ReportMissingJsonSerializableTypes(ctx, compilation, models);
             ctx.AddSource("EndpointRegistration.g.cs", SourceText.From(Emit(models), Encoding.UTF8));
         });
+    }
+
+    private static void ReportMissingJsonSerializableTypes(SourceProductionContext ctx, Compilation compilation, IReadOnlyList<EndpointModel> endpoints)
+    {
+        var jsonContext = compilation.GetTypeByMetadataName(WebApiJsonContextFqn);
+        if (jsonContext == null)
+        {
+            // If the app doesn't have a context, endpoint JSON will fail without reflection fallback.
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                MissingJsonSerializableTypes,
+                location: null,
+                "/* endpoint DTOs */",
+                WebApiJsonContextFqn));
+            return;
+        }
+
+        var jsonContextLocation = jsonContext.Locations.FirstOrDefault() ?? Location.None;
+
+        var existing = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var attr in jsonContext.GetAttributes())
+        {
+            if (!string.Equals(attr.AttributeClass?.ToDisplayString(), JsonSerializableAttrFqn, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (attr.ConstructorArguments.Length >= 1 && attr.ConstructorArguments[0].Value is ITypeSymbol ts)
+            {
+                existing.Add(ts.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+            }
+        }
+
+        var required = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var ep in endpoints.Where(e => e.IsFeature))
+        {
+            if (!string.IsNullOrWhiteSpace(ep.RequestBodyType))
+            {
+                required.Add(ep.RequestBodyType!);
+            }
+
+            if (!string.IsNullOrWhiteSpace(ep.ResponseBodyType))
+            {
+                required.Add(ep.ResponseBodyType!);
+            }
+        }
+
+        foreach (var typeFqn in required)
+        {
+            if (existing.Contains(typeFqn))
+            {
+                continue;
+            }
+
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                MissingJsonSerializableTypes,
+                jsonContextLocation,
+                typeFqn,
+                WebApiJsonContextFqn));
+        }
     }
 
     private static string Emit(IReadOnlyList<EndpointModel> models)
