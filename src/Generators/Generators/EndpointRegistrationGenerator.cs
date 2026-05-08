@@ -125,6 +125,7 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
         sb.AppendLine("#nullable enable");
         sb.AppendLine("using global::Microsoft.AspNetCore.Http;");
         sb.AppendLine("using global::Microsoft.Extensions.DependencyInjection;");
+        sb.AppendLine("using global::System.Linq;");
         sb.AppendLine("namespace Microsoft.AspNetCore.Builder;");
         sb.AppendLine();
         sb.AppendLine("public static partial class GeneratedEndpointRouteBuilderExtensions");
@@ -180,7 +181,11 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             sb.AppendLine("            var validation = await validator.ValidateAsync(req, ct).ConfigureAwait(false);");
             sb.AppendLine("            if (!validation.IsValid)");
             sb.AppendLine("            {");
-            sb.AppendLine("                return TypedResults.BadRequest();");
+            sb.AppendLine("                var errors = validation.Errors");
+            sb.AppendLine("                    .GroupBy(e => e.PropertyName)");
+            sb.AppendLine("                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());");
+            sb.AppendLine();
+            sb.AppendLine("                return TypedResults.BadRequest(new { errors });");
             sb.AppendLine("            }");
             sb.AppendLine("        }");
             sb.AppendLine();

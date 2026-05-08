@@ -45,4 +45,22 @@ public class CreateTodoTests : TestBase
         await Assert.That(fetched!.Id).IsEqualTo(created.Id);
         await Assert.That(fetched.Title).IsEqualTo(expectedTitle);
     }
+
+    [Test]
+    public async Task CreateTodo_InvalidTitle_ReturnsValidationProblem()
+    {
+        // Arrange
+        var req = new CreateTodoApiRequest { Title = "ab", DueBy = null };
+
+        // Act
+        var response = await Client.PostAsJsonAsync(Routes.Todos.Create, req);
+
+        // Assert
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        await Assert.That(body).Contains("\"errors\"");
+        await Assert.That(body).Contains("\"Title\"");
+        await Assert.That(body).Contains("at least 3");
+    }
 }
