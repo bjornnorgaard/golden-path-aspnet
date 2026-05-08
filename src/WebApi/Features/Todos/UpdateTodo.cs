@@ -7,13 +7,16 @@ using WebApi.Endpoints;
 
 namespace WebApi.Features.Todos;
 
-[Endpoint(Routes.Todos.GetById, EndpointMethod.Post)]
-public class GetTodo
-    : IFeature<GetTodo.RequestBody, GetTodo.ResponseBody, GetTodo.Command, GetTodo.Result, GetTodo.Handler>
+[Endpoint(Routes.Todos.Update, EndpointMethod.Post)]
+public class UpdateTodo
+    : IFeature<UpdateTodo.RequestBody, UpdateTodo.ResponseBody, UpdateTodo.Command, UpdateTodo.Result, UpdateTodo.Handler>
 {
     public class RequestBody
     {
         public required string Id { get; init; }
+        public required string Title { get; init; }
+        public DateTime? DueBy { get; init; }
+        public bool IsComplete { get; init; }
     }
 
     public class ResponseBody
@@ -30,12 +33,16 @@ public class GetTodo
         public Validator()
         {
             RuleFor(x => x.Id).NotEmpty().Must(id => TodoId.TryParse(id, out _));
+            RuleFor(x => x.Title).NotEmpty().MinimumLength(3);
         }
     }
 
     public class Command
     {
         public required TodoId Id { get; init; }
+        public required string Title { get; init; }
+        public DateTime? DueBy { get; init; }
+        public bool IsComplete { get; init; }
     }
 
     public class Result
@@ -50,7 +57,10 @@ public class GetTodo
     {
         return new Command
         {
-            Id = TodoId.MustParse(request.Id)
+            Id = TodoId.MustParse(request.Id),
+            Title = request.Title,
+            DueBy = request.DueBy,
+            IsComplete = request.IsComplete
         };
     }
 
@@ -75,6 +85,11 @@ public class GetTodo
             {
                 return Outcome<Result>.NotFound("Todo was not found.");
             }
+
+            todo.Title = cmd.Title;
+            todo.DueBy = cmd.DueBy;
+            todo.IsComplete = cmd.IsComplete;
+            await context.SaveChangesAsync(ct);
 
             return Outcome<Result>.Ok(new Result
             {

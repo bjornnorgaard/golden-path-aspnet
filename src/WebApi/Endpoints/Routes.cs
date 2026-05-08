@@ -1,10 +1,13 @@
 namespace WebApi.Endpoints;
 
-public static class Routes
+internal static class Routes
 {
-    public static class Todos
+    internal static class Todos
     {
-        public const string Create = "/todos/create";
-        public const string GetById = "/todos/get-by-id";
+        internal const string Create = "/todos/create";
+        internal const string GetById = "/todos/get-by-id";
+        internal const string GetList = "/todos/get-list";
+        internal const string Update = "/todos/update";
+        internal const string Delete = "/todos/delete";
     }
 }

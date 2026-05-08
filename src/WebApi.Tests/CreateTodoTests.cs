@@ -19,7 +19,7 @@ public class CreateTodoTests : TestBase
 
         // POST request to create the item
         var createTodoRequest = new CreateTodoApiRequest { Title = expectedTitle, DueBy = null };
-        var response = await Client.PostAsJsonAsync(Routes.Todos.Create, createTodoRequest);
+        var response = await Client.PostAsJsonAsync(TestRoutes.Todos.Create, createTodoRequest);
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         // Validate response from POST request
@@ -36,7 +36,7 @@ public class CreateTodoTests : TestBase
 
         // GET request to fetch the created item
         var getTodoByIdRequest = new GetTodoByIdApiRequest { Id = created.Id };
-        var get = await Client.PostAsJsonAsync(Routes.Todos.GetById, getTodoByIdRequest);
+        var get = await Client.PostAsJsonAsync(TestRoutes.Todos.GetById, getTodoByIdRequest);
         await Assert.That(get.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         // Validate response from GET request
@@ -53,7 +53,7 @@ public class CreateTodoTests : TestBase
         var req = new CreateTodoApiRequest { Title = "ab", DueBy = null };
 
         // Act
-        var response = await Client.PostAsJsonAsync(Routes.Todos.Create, req);
+        var response = await Client.PostAsJsonAsync(TestRoutes.Todos.Create, req);
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
