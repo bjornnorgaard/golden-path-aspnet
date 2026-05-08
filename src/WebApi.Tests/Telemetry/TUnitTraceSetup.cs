@@ -1,5 +1,4 @@
 using OpenTelemetry;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -15,7 +14,7 @@ public static class TUnitTraceSetup
     public static void SetupTracing()
     {
         var resourceBuilder = ResourceBuilder.CreateDefault()
-            .AddService("goldenpath-tests");
+            .AddService("tunit");
 
         _tracerProvider = Sdk.CreateTracerProviderBuilder()
             .SetResourceBuilder(resourceBuilder)
