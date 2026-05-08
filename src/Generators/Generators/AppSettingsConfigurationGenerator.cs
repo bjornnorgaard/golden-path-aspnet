@@ -79,7 +79,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
 
             ctx.AddSource(
                 "AppSettingsConfiguration.DependencyInjection.g.cs",
-                SourceText.From(EmitDependencyInjection(rootNamespace, schema), Encoding.UTF8));
+                SourceText.From(EmitDependencyInjection(assemblyName, rootNamespace, schema), Encoding.UTF8));
 
             ctx.AddSource(
                 "AppSettingsConfiguration.ConfigurationExtensions.g.cs",
@@ -130,6 +130,8 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
                 typeName = "Section";
             }
 
+            typeName = EnsureOptionsTypeName(typeName);
+
             var fullName = rootNamespace + "." + typeName;
             var type = EnsureType(types, fullName);
             PopulateObjectType(types, rootNamespace, type, prop.Value, preferredNestedNamePrefix: typeName);
@@ -163,7 +165,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         {
             // If the section isn't an object, still allow binding to a wrapper class with a single Value property.
             type.Properties.Clear();
-            type.Properties.Add(new ConfigProperty("Value", ResolvePrimitiveCSharpType(value), jsonPath: preferredNestedNamePrefix + ":Value"));
+            type.Properties.Add(new ConfigProperty("Value", ResolvePrimitiveCSharpType(value), jsonPath: preferredNestedNamePrefix + ":Value", jsonKey: "Value"));
             return;
         }
 
@@ -178,21 +180,22 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
             var propValue = prop.Value;
             if (propValue.ValueKind == JsonValueKind.Object)
             {
-                var nestedName = preferredNestedNamePrefix + propName;
+                var nestedNameBase = StripOptionsSuffix(preferredNestedNamePrefix) + propName;
+                var nestedName = EnsureOptionsTypeName(nestedNameBase);
                 var nestedFullName = rootNamespace + "." + nestedName;
                 var nestedType = EnsureType(types, nestedFullName);
                 PopulateObjectType(types, rootNamespace, nestedType, propValue, preferredNestedNamePrefix: nestedName);
 
-                type.Properties.Add(new ConfigProperty(propName, "global::" + nestedFullName, jsonPath: preferredNestedNamePrefix + ":" + prop.Name));
+                type.Properties.Add(new ConfigProperty(propName, "global::" + nestedFullName, jsonPath: preferredNestedNamePrefix + ":" + prop.Name, jsonKey: prop.Name));
             }
             else if (propValue.ValueKind == JsonValueKind.Array)
             {
-                var elemType = ResolveArrayElementType(types, rootNamespace, preferredNestedNamePrefix + propName, propValue);
-                type.Properties.Add(new ConfigProperty(propName, $"global::System.Collections.Generic.List<{elemType}>", jsonPath: preferredNestedNamePrefix + ":" + prop.Name));
+                var elemType = ResolveArrayElementType(types, rootNamespace, StripOptionsSuffix(preferredNestedNamePrefix) + propName, propValue);
+                type.Properties.Add(new ConfigProperty(propName, $"global::System.Collections.Generic.List<{elemType}>", jsonPath: preferredNestedNamePrefix + ":" + prop.Name, jsonKey: prop.Name));
             }
             else
             {
-                type.Properties.Add(new ConfigProperty(propName, ResolvePrimitiveCSharpType(propValue), jsonPath: preferredNestedNamePrefix + ":" + prop.Name));
+                type.Properties.Add(new ConfigProperty(propName, ResolvePrimitiveCSharpType(propValue), jsonPath: preferredNestedNamePrefix + ":" + prop.Name, jsonKey: prop.Name));
             }
         }
     }
@@ -207,9 +210,10 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         {
             if (item.ValueKind == JsonValueKind.Object)
             {
-                var nestedFullName = rootNamespace + "." + nestedNamePrefix + "Item";
+                var nestedName = EnsureOptionsTypeName(nestedNamePrefix + "Item");
+                var nestedFullName = rootNamespace + "." + nestedName;
                 var nestedType = EnsureType(types, nestedFullName);
-                PopulateObjectType(types, rootNamespace, nestedType, item, preferredNestedNamePrefix: nestedNamePrefix + "Item");
+                PopulateObjectType(types, rootNamespace, nestedType, item, preferredNestedNamePrefix: nestedName);
                 return "global::" + nestedFullName;
             }
 
@@ -273,6 +277,10 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
             foreach (var prop in type.Properties
                          .OrderBy(static p => p.Name, StringComparer.Ordinal))
             {
+                if (!string.Equals(prop.JsonKey, prop.Name, StringComparison.Ordinal))
+                {
+                    sb.AppendLine($"    [global::Microsoft.Extensions.Configuration.ConfigurationKeyName(\"{EscapeStringLiteral(prop.JsonKey)}\")]");
+                }
                 sb.AppendLine($"    public required {prop.CSharpType} {prop.Name} {{ get; set; }} = default!;");
             }
 
@@ -283,8 +291,10 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string EmitDependencyInjection(string rootNamespace, AppSettingsSchema schema)
+    private static string EmitDependencyInjection(string assemblyName, string rootNamespace, AppSettingsSchema schema)
     {
+        var methodName = "Add" + ToPascalIdentifier(assemblyName) + "GeneratedConfiguration";
+
         var sb = new StringBuilder();
         sb.AppendLine("// <auto-generated/>");
         sb.AppendLine("#nullable enable");
@@ -293,7 +303,14 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         sb.AppendLine("using global::System.Collections.Generic;");
         sb.AppendLine("public static partial class GeneratedConfigurationRegistrationExtensions");
         sb.AppendLine("{");
-        sb.AppendLine("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection AddGeneratedConfiguration(");
+        sb.AppendLine($"    public static global::Microsoft.AspNetCore.Builder.WebApplicationBuilder {methodName}(");
+        sb.AppendLine("        this global::Microsoft.AspNetCore.Builder.WebApplicationBuilder builder)");
+        sb.AppendLine("    {");
+        sb.AppendLine($"        builder.Services.{methodName}(builder.Configuration);");
+        sb.AppendLine("        return builder;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine($"    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection {methodName}(");
         sb.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services,");
         sb.AppendLine("        global::Microsoft.Extensions.Configuration.IConfiguration configuration)");
         sb.AppendLine("    {");
@@ -302,12 +319,12 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         {
             var typeFqn = "global::" + section.TypeFullName;
             var sectionLiteral = EscapeStringLiteral(section.SectionName);
-            var validatorMethod = "ValidateNotNull_" + section.TypeName;
+            var validatorType = "__ValidateOptions_" + section.TypeName;
 
             sb.AppendLine($"        services.AddOptions<{typeFqn}>()");
             sb.AppendLine($"            .Bind(configuration.GetSection(\"{sectionLiteral}\"))");
-            sb.AppendLine($"            .Validate(x => {validatorMethod}(x), \"Configuration contains null values\")");
             sb.AppendLine("            .ValidateOnStart();");
+            sb.AppendLine($"        services.AddSingleton<global::Microsoft.Extensions.Options.IValidateOptions<{typeFqn}>>(new {validatorType}());");
             sb.AppendLine($"        services.AddSingleton(sp => sp.GetRequiredService<global::Microsoft.Extensions.Options.IOptions<{typeFqn}>>().Value);");
             sb.AppendLine();
         }
@@ -330,6 +347,27 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
     {
         var emitted = new HashSet<string>(StringComparer.Ordinal);
         EmitValidatorForTypeInner(sb, rootNamespace, schema, rootTypeName, rootTypeFullName, emitted);
+        EmitValidateOptionsType(sb, rootNamespace, schema, rootTypeName, rootTypeFullName);
+    }
+
+    private static void EmitValidateOptionsType(StringBuilder sb, string rootNamespace, AppSettingsSchema schema, string rootTypeName, string rootTypeFullName)
+    {
+        sb.AppendLine($"    private sealed class __ValidateOptions_{rootTypeName} : global::Microsoft.Extensions.Options.IValidateOptions<global::{rootTypeFullName}>");
+        sb.AppendLine("    {");
+        sb.AppendLine("        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::" + rootTypeFullName + " options)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            var errors = new global::System.Collections.Generic.List<string>();");
+        sb.AppendLine($"            CollectNullPaths_{rootTypeName}(options, errors);");
+        sb.AppendLine("            if (errors.Count == 0)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                return global::Microsoft.Extensions.Options.ValidateOptionsResult.Success;");
+        sb.AppendLine("            }");
+        sb.AppendLine();
+        sb.AppendLine("            return global::Microsoft.Extensions.Options.ValidateOptionsResult.Fail(");
+        sb.AppendLine("                \"Configuration contains null values: \" + string.Join(\", \", errors));");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+        sb.AppendLine();
     }
 
     private static void EmitValidatorForTypeInner(
@@ -351,20 +389,23 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         if (type == null)
         {
             // Shouldn't happen, but keep generated code compilable.
-            sb.AppendLine($"    private static bool ValidateNotNull_{rootTypeName}(global::{rootTypeFullName} value) => value != null;");
+            sb.AppendLine($"    private static void CollectNullPaths_{rootTypeName}(global::{rootTypeFullName} value, global::System.Collections.Generic.List<string> errors) {{ }}");
             return;
         }
 
-        sb.AppendLine($"    private static bool ValidateNotNull_{rootTypeName}(global::{rootTypeFullName} value)");
+        sb.AppendLine($"    private static void CollectNullPaths_{rootTypeName}(global::{rootTypeFullName} value, global::System.Collections.Generic.List<string> errors)");
         sb.AppendLine("    {");
-        sb.AppendLine("        if (value is null) return false;");
+        sb.AppendLine("        if (value is null)");
+        sb.AppendLine("        {");
+        sb.AppendLine($"            errors.Add(\"{EscapeStringLiteral(rootTypeName)}\");");
+        sb.AppendLine("            return;");
+        sb.AppendLine("        }");
 
         foreach (var prop in type.Properties.OrderBy(p => p.Name, StringComparer.Ordinal))
         {
             EmitNullCheckForProperty(sb, rootNamespace, schema, rootTypeName, prop);
         }
 
-        sb.AppendLine("        return true;");
         sb.AppendLine("    }");
 
         // Recurse into nested generated types referenced by properties.
@@ -391,29 +432,33 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
     {
         var type = prop.CSharpType;
         var propExpr = $"value.{prop.Name}";
+        var jsonPathLiteral = EscapeStringLiteral(prop.JsonPath);
 
         if (string.Equals(type, "global::System.String", StringComparison.Ordinal))
         {
-            sb.AppendLine($"        if ({propExpr} is null) return false;");
+            sb.AppendLine($"        if ({propExpr} is null) errors.Add(\"{jsonPathLiteral}\");");
             return;
         }
 
         if (type.StartsWith("global::System.Collections.Generic.List<", StringComparison.Ordinal))
         {
             var elemType = TryGetListElementType(type) ?? "global::System.String";
-            sb.AppendLine($"        if ({propExpr} is null) return false;");
-            sb.AppendLine($"        for (var i = 0; i < {propExpr}.Count; i++)");
+            sb.AppendLine($"        if ({propExpr} is null) errors.Add(\"{jsonPathLiteral}\");");
+            sb.AppendLine($"        if ({propExpr} is not null)");
             sb.AppendLine("        {");
-            sb.AppendLine($"            var item = {propExpr}[i];");
-            sb.AppendLine("            if (item is null) return false;");
+            sb.AppendLine($"            for (var i = 0; i < {propExpr}.Count; i++)");
+            sb.AppendLine("            {");
+            sb.AppendLine($"                var item = {propExpr}[i];");
+            sb.AppendLine($"                if (item is null) errors.Add($\"{jsonPathLiteral}[{{i}}]\");");
 
             var nestedElemTypeFullName = TryGetNestedGeneratedTypeFullName(rootNamespace, elemType);
             if (nestedElemTypeFullName != null)
             {
                 var nestedName = nestedElemTypeFullName.Substring(rootNamespace.Length + 1);
-                sb.AppendLine($"            if (!ValidateNotNull_{nestedName}(item)) return false;");
+                sb.AppendLine($"                if (item is not null) CollectNullPaths_{nestedName}(item, errors);");
             }
 
+            sb.AppendLine("            }");
             sb.AppendLine("        }");
             return;
         }
@@ -430,13 +475,13 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         if (nestedTypeFullName != null)
         {
             var nestedName = nestedTypeFullName.Substring(rootNamespace.Length + 1);
-            sb.AppendLine($"        if ({propExpr} is null) return false;");
-            sb.AppendLine($"        if (!ValidateNotNull_{nestedName}({propExpr})) return false;");
+            sb.AppendLine($"        if ({propExpr} is null) errors.Add(\"{jsonPathLiteral}\");");
+            sb.AppendLine($"        if ({propExpr} is not null) CollectNullPaths_{nestedName}({propExpr}, errors);");
         }
         else
         {
             // Unknown reference type, still null-check.
-            sb.AppendLine($"        if ({propExpr} is null) return false;");
+            sb.AppendLine($"        if ({propExpr} is null) errors.Add(\"{jsonPathLiteral}\");");
         }
     }
 
@@ -503,6 +548,16 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
 
     private static string EscapeStringLiteral(string s) =>
         s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+    private const string OptionsSuffix = "Options";
+
+    private static string EnsureOptionsTypeName(string typeName) =>
+        typeName.EndsWith(OptionsSuffix, StringComparison.Ordinal) ? typeName : typeName + OptionsSuffix;
+
+    private static string StripOptionsSuffix(string typeName) =>
+        typeName.EndsWith(OptionsSuffix, StringComparison.Ordinal)
+            ? typeName.Substring(0, typeName.Length - OptionsSuffix.Length)
+            : typeName;
 
     private static string ToPascalIdentifier(string text)
     {
@@ -585,10 +640,11 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
         public List<ConfigProperty> Properties { get; } = new();
     }
 
-    private sealed class ConfigProperty(string name, string cSharpType, string jsonPath)
+    private sealed class ConfigProperty(string name, string cSharpType, string jsonPath, string jsonKey)
     {
         public string Name { get; } = name;
         public string CSharpType { get; } = cSharpType;
         public string JsonPath { get; } = jsonPath;
+        public string JsonKey { get; } = jsonKey;
     }
 }

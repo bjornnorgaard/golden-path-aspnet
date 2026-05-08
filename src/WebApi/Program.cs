@@ -8,7 +8,8 @@ using WebApi.Json;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.AddPlatform();
-builder.Services.RegisterGeneratedServices();
+builder.AddWebApiGeneratedConfiguration();
+builder.RegisterGeneratedServices();
 builder.Services.AddValidatorsFromAssemblyContaining<AssemblyAnchor>();
 
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");

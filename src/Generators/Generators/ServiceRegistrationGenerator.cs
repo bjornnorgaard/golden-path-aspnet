@@ -128,6 +128,13 @@ public class ServiceRegistrationGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("public static partial class GeneratedServiceRegistrationExtensions");
         sb.AppendLine("{");
+        sb.AppendLine("    public static global::Microsoft.AspNetCore.Builder.WebApplicationBuilder RegisterGeneratedServices(");
+        sb.AppendLine("        this global::Microsoft.AspNetCore.Builder.WebApplicationBuilder builder)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        builder.Services.RegisterGeneratedServices();");
+        sb.AppendLine("        return builder;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
         sb.AppendLine("    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection RegisterGeneratedServices(");
         sb.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
         sb.AppendLine("    {");
