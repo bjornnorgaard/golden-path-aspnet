@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using OpenTelemetry;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -20,8 +21,29 @@ public static class TUnitTraceSetup
             .SetResourceBuilder(resourceBuilder)
             .AddSource("TUnit")
             .AddSource("TUnit.Lifecycle")
+            .AddProcessor(new TestCaseNameProcessor())
             .AddOtlpExporter(opts => opts.Endpoint = CollectorEndpoint)
             .Build();
+    }
+
+    private sealed class TestCaseNameProcessor : BaseProcessor<Activity>
+    {
+        public override void OnEnd(Activity activity)
+        {
+            // TUnit uses "test case" as the operation name; rename it to something searchable in UIs.
+            // The tag name follows OpenTelemetry test semantic conventions.
+            if (!string.Equals(activity.DisplayName, "test case", StringComparison.OrdinalIgnoreCase))
+            {
+                // These are not the test cases we're looking for
+                return;
+            }
+
+            var testCaseName = activity.GetTagItem("test.case.name") as string;
+            if (!string.IsNullOrWhiteSpace(testCaseName))
+            {
+                activity.DisplayName = testCaseName;
+            }
+        }
     }
 
     [After(TestSession)]
