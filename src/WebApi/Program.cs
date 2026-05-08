@@ -1,10 +1,8 @@
-using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Platform;
 using WebApi;
 using WebApi.Database;
-using WebApi.Database.Models;
 using WebApi.Json;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -26,11 +24,3 @@ app.UsePlatform();
 app.MapGeneratedEndpoints();
 
 app.Run();
-
-namespace WebApi
-{
-    [JsonSerializable(typeof(Todo[]))]
-    internal partial class AppJsonSerializerContext : JsonSerializerContext
-    {
-    }
-}
