@@ -11,9 +11,6 @@ namespace WebApi.Tests;
 
 public class CreateTodoTests : TestBase
 {
-    [ClassDataSource<PostgresContainer>(Shared = SharedType.PerTestSession)]
-    public PostgresContainer Postgres { get; init; } = null!;
-
     [Test]
     public async Task CreateTodo_Success()
     {
@@ -34,8 +31,7 @@ public class CreateTodoTests : TestBase
         // Validate item exists in the database
         await using var scope = Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TodoContext>();
-        var strongTodoId = TodoId.MustParse(created.Id);
-        var exists = await db.Todos.AsNoTracking().AnyAsync(t => t.Id == strongTodoId);
+        var exists = await db.Todos.AsNoTracking().AnyAsync(t => t.Id == TodoId.MustParse(created.Id));
         await Assert.That(exists).IsTrue();
 
         // GET request to fetch the created item
