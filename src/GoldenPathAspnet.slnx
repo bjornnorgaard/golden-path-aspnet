@@ -1,5 +1,6 @@
 <Solution>
-  <Project Path="Generators/Generators/Generators.csproj"/>
-  <Project Path="Platform/Platform.csproj"/>
-  <Project Path="WebApi/WebApi.csproj"/>
+    <Project Path="Generators/Generators/Generators.csproj"/>
+    <Project Path="Platform/Platform.csproj"/>
+    <Project Path="WebApi.Tests/WebApi.Tests.csproj"/>
+    <Project Path="WebApi/WebApi.csproj"/>
 </Solution>
