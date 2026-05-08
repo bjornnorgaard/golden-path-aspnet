@@ -45,24 +45,26 @@ public class GetTodo
         public bool IsComplete { get; init; }
     }
 
-    public static Command MapToCommand(RequestBody request) =>
-        new()
-        {
-            // Validator guarantees this parses; handler owns mapped types.
-            Id = TodoId.MustParse(request.Id)
-        };
+    public static Command MapToCommand(RequestBody request)
+    {
+        return new Command { Id = TodoId.MustParse(request.Id) };
+    }
 
-    public static ResponseBody MapToResponseBody(Result? result) =>
-        // Generator guards null => NotFound; this is here to satisfy the feature contract.
-        result == null
-            ? throw new ArgumentNullException(nameof(result))
-            : new ResponseBody
-            {
-                Id = result.Id,
-                Title = result.Title,
-                DueBy = result.DueBy,
-                IsComplete = result.IsComplete
-            };
+    public static ResponseBody MapToResponseBody(Result? result)
+    {
+        if (result == null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
+        return new ResponseBody
+        {
+            Id = result.Id,
+            Title = result.Title,
+            DueBy = result.DueBy,
+            IsComplete = result.IsComplete
+        };
+    }
 
     [Service(lifetime: ServiceLifetime.Transient, asSelf: true)]
     public class Handler(TodoContext context)
