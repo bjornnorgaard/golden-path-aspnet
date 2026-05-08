@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Platform;
 using WebApi;
 using WebApi.Database;
 using WebApi.Database.Models;
@@ -8,6 +9,7 @@ using WebApi.Json;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
+builder.AddPlatform();
 builder.Services.AddOpenApi();
 builder.Services.RegisterGeneratedServices();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -24,6 +26,7 @@ builder.Services.ConfigureHttpJsonOptions(opts =>
 });
 
 var app = builder.Build();
+app.UsePlatform();
 app.MapOpenApi();
 app.MapGeneratedEndpoints();
 
