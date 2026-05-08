@@ -110,6 +110,11 @@ public class ServiceRegistrationGenerator : IIncrementalGenerator
                 .OrderBy(static m => m.ImplementationType, StringComparer.Ordinal)
                 .ToArray();
 
+            if (models.Length == 0)
+            {
+                return;
+            }
+
             ctx.AddSource("ServiceRegistration.g.cs", SourceText.From(Emit(models), Encoding.UTF8));
         });
     }

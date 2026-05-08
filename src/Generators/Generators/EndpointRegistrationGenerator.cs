@@ -114,6 +114,11 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 .ThenBy(static m => m.FeatureType, StringComparer.Ordinal)
                 .ToArray();
 
+            if (models.Length == 0)
+            {
+                return;
+            }
+
             ctx.AddSource("EndpointRegistration.g.cs", SourceText.From(Emit(models), Encoding.UTF8));
         });
     }

@@ -16,22 +16,17 @@ public static class TelemetryConfiguration
     {
         public void AddPlatformTelemetry()
         {
-            var endpoint = builder.Configuration.GetValue<string>("Telemetry:CollectorEndpoint");
-            if (endpoint == null)
-            {
-                endpoint = "http://localhost:4317";
-            }
-
-            var collectorEndpoint = new Uri(endpoint, UriKind.Absolute);
+            var telemetry = builder.Configuration.GetTelemetry();
+            var collectorEndpoint = new Uri(telemetry.CollectorEndpoint, UriKind.Absolute);
 
             var resourceBuilder = ResourceBuilder
                 .CreateDefault()
-                .AddService(serviceName: builder.Environment.ApplicationName);
+                .AddService(serviceName: telemetry.ServiceName);
 
             builder.Services
                 .AddOpenTelemetry()
                 .ConfigureResource(resource => resource
-                    .AddService(serviceName: builder.Environment.ApplicationName))
+                    .AddService(serviceName: telemetry.ServiceName))
                 .WithTracing(tracing => tracing
                     .SetResourceBuilder(resourceBuilder)
                     .AddAspNetCoreInstrumentation()

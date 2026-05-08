@@ -305,8 +305,8 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
             var validatorMethod = "ValidateNotNull_" + section.TypeName;
 
             sb.AppendLine($"        services.AddOptions<{typeFqn}>()");
-            sb.AppendLine($"            .Bind(configuration.GetRequiredSection(\"{sectionLiteral}\"))");
-            sb.AppendLine($"            .Validate(static x => {validatorMethod}(x), \"Configuration contains null values\")");
+            sb.AppendLine($"            .Bind(configuration.GetSection(\"{sectionLiteral}\"))");
+            sb.AppendLine($"            .Validate(x => {validatorMethod}(x), \"Configuration contains null values\")");
             sb.AppendLine("            .ValidateOnStart();");
             sb.AppendLine($"        services.AddSingleton(sp => sp.GetRequiredService<global::Microsoft.Extensions.Options.IOptions<{typeFqn}>>().Value);");
             sb.AppendLine();
@@ -475,7 +475,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
 
             sb.AppendLine($"    public static {typeFqn} {method}(this global::Microsoft.Extensions.Configuration.IConfiguration configuration)");
             sb.AppendLine("    {");
-            sb.AppendLine($"        var section = configuration.GetRequiredSection(\"{sectionLiteral}\");");
+            sb.AppendLine($"        var section = configuration.GetSection(\"{sectionLiteral}\");");
             sb.AppendLine($"        return global::Microsoft.Extensions.Configuration.ConfigurationBinder.Get<{typeFqn}>(section)");
             sb.AppendLine($"            ?? throw new global::System.InvalidOperationException(\"Unable to bind required configuration section '{sectionLiteral}'.\");");
             sb.AppendLine("    }");
