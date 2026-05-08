@@ -1,15 +1,18 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Endpoints;
 
 namespace WebApi.Features.Todos;
 
-public class GetTodo
+[Endpoint(Routes.Todos.GetById, EndpointMethod.Post)]
+public class GetTodo : IFeature<GetTodo.Request, GetTodo.Result, GetTodo.Handler>
 {
     public class Request
     {
-        public required TodoId Id { get; init; }
+        public required string Id { get; init; }
     }
 
     public class Result
@@ -20,12 +23,23 @@ public class GetTodo
         public bool IsComplete { get; init; }
     }
 
+    public sealed class Validator : AbstractValidator<Request>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Id).NotEmpty().Must(id => TodoId.TryParse(id, out _));
+        }
+    }
+
     [Service(lifetime: ServiceLifetime.Transient, asSelf: true)]
     public class Handler(TodoContext context)
     {
         public async Task<Result?> Handle(Request req, CancellationToken ct)
         {
-            var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == req.Id, ct);
+            // Validator guarantees this parses; handler owns mapping.
+            var parsedId = TodoId.MustParse(req.Id);
+
+            var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == parsedId, ct);
             if (todo == null) return null;
 
             return new Result

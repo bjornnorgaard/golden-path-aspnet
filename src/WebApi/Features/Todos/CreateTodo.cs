@@ -1,10 +1,13 @@
+using FluentValidation;
 using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Endpoints;
 
 namespace WebApi.Features.Todos;
 
-public class CreateTodo
+[Endpoint(Routes.Todos.Create, EndpointMethod.Post)]
+public class CreateTodo : IFeature<CreateTodo.Request, CreateTodo.Result, CreateTodo.Handler>
 {
     public class Request
     {
@@ -18,6 +21,14 @@ public class CreateTodo
         public required string Title { get; init; }
         public DateTime? DueBy { get; init; }
         public bool IsComplete { get; init; }
+    }
+
+    public sealed class Validator : AbstractValidator<Request>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Title).NotEmpty();
+        }
     }
 
     [Service(lifetime: ServiceLifetime.Transient, asSelf: true)]
