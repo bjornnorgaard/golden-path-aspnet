@@ -45,7 +45,7 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                     // Endpoint name now defaults to the attributed type name.
                     var endpointName = symbol.Name;
 
-                    // Feature endpoint: IFeature<TRequest, TResult, THandler> => generated handler w/ validation
+                    // Feature endpoint: IFeature<TRequestBody, TResponseBody, TCommand, TResult, THandler>
                     var featureContract = symbol.AllInterfaces.FirstOrDefault(IsFeatureContract);
                     if (featureContract == null)
                     {
@@ -63,19 +63,21 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                         );
                     }
 
-                    if (featureContract.TypeArguments.Length != 3) return null;
-                    var requestType = featureContract.TypeArguments[0];
-                    var resultType = featureContract.TypeArguments[1];
-                    var handlerType = featureContract.TypeArguments[2] as INamedTypeSymbol;
+                    if (featureContract.TypeArguments.Length != 5) return null;
+                    var requestBodyType = featureContract.TypeArguments[0];
+                    var responseBodyType = featureContract.TypeArguments[1];
+                    var commandType = featureContract.TypeArguments[2];
+                    var resultType = featureContract.TypeArguments[3];
+                    var handlerType = featureContract.TypeArguments[4] as INamedTypeSymbol;
                     if (handlerType == null) return null;
 
-                    // require Handler.Handle(TRequest, CancellationToken) returning Task<TResult> or Task<TResult?>
+                    // require Handler.Handle(TCommand, CancellationToken) returning Task<TResult> or Task<TResult?>
                     var handleMethod = handlerType.GetMembers("Handle")
                         .OfType<IMethodSymbol>()
                         .FirstOrDefault(m =>
                             m is { IsStatic: false, DeclaredAccessibility: Accessibility.Public } &&
                             m.Parameters.Length == 2 &&
-                            SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, requestType) &&
+                            SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, commandType) &&
                             m.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ==
                             "global::System.Threading.CancellationToken");
                     if (handleMethod == null) return null;
@@ -86,14 +88,18 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                                                  taskInner.NullableAnnotation == NullableAnnotation.Annotated);
 
                     var handlerDisplay = handlerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    var requestDisplay = requestType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    var requestBodyDisplay = requestBodyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    var responseBodyDisplay = responseBodyType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    var commandDisplay = commandType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     var resultDisplay = resultType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
                     return EndpointModel.ForFeature(
                         featureType: symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         featureName: endpointName,
                         handlerType: handlerDisplay,
-                        requestType: requestDisplay,
+                        requestBodyType: requestBodyDisplay,
+                        responseBodyType: responseBodyDisplay,
+                        commandType: commandDisplay,
                         resultType: resultDisplay,
                         resultCanBeNull: returnsNullableResult,
                         route: route,
@@ -170,12 +176,12 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
 
             sb.AppendLine();
             sb.AppendLine($"    private static async global::System.Threading.Tasks.Task<IResult> {handlerMethodName}(");
-            sb.AppendLine($"        [global::Microsoft.AspNetCore.Mvc.FromBody] {ep.RequestType} req,");
+            sb.AppendLine($"        [global::Microsoft.AspNetCore.Mvc.FromBody] {ep.RequestBodyType} req,");
             sb.AppendLine($"        {ep.HandlerType} handler,");
             sb.AppendLine("        global::System.IServiceProvider sp,");
             sb.AppendLine("        global::System.Threading.CancellationToken ct)");
             sb.AppendLine("    {");
-            sb.AppendLine($"        var validator = sp.GetService<global::FluentValidation.IValidator<{ep.RequestType}>>();");
+            sb.AppendLine($"        var validator = sp.GetService<global::FluentValidation.IValidator<{ep.RequestBodyType}>>();");
             sb.AppendLine("        if (validator != null)");
             sb.AppendLine("        {");
             sb.AppendLine("            var validation = await validator.ValidateAsync(req, ct).ConfigureAwait(false);");
@@ -189,7 +195,8 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             sb.AppendLine("            }");
             sb.AppendLine("        }");
             sb.AppendLine();
-            sb.AppendLine("        var result = await handler.Handle(req, ct).ConfigureAwait(false);");
+            sb.AppendLine($"        var cmd = {ep.FeatureType}.MapToCommand(req);");
+            sb.AppendLine("        var result = await handler.Handle(cmd, ct).ConfigureAwait(false);");
             if (ep.ResultCanBeNull)
             {
                 sb.AppendLine("        if (result is null)");
@@ -197,12 +204,14 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 sb.AppendLine("            return TypedResults.NotFound();");
                 sb.AppendLine("        }");
                 sb.AppendLine();
-                sb.AppendLine("        return TypedResults.Ok(result);");
+                sb.AppendLine($"        var body = {ep.FeatureType}.MapToResponseBody(result);");
+                sb.AppendLine("        return TypedResults.Ok(body);");
             }
             else
             {
                 sb.AppendLine();
-                sb.AppendLine("        return TypedResults.Ok(result);");
+                sb.AppendLine($"        var body = {ep.FeatureType}.MapToResponseBody(result);");
+                sb.AppendLine("        return TypedResults.Ok(body);");
             }
 
             sb.AppendLine("    }");
@@ -216,7 +225,7 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
 
     private static bool IsFeatureContract(INamedTypeSymbol i)
     {
-        if (i is not { Name: "IFeature", Arity: 3 }) return false;
+        if (i is not { Name: "IFeature", Arity: 5 }) return false;
         return i.ContainingNamespace is { IsGlobalNamespace: false } &&
                i.ContainingNamespace.ToDisplayString() == "WebApi.Features";
     }
@@ -254,7 +263,9 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             string? featureType,
             string? featureName,
             string? handlerType,
-            string? requestType,
+            string? requestBodyType,
+            string? responseBodyType,
+            string? commandType,
             string? resultType,
             bool resultCanBeNull,
             string route,
@@ -266,7 +277,9 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             FeatureType = featureType;
             FeatureName = featureName;
             HandlerType = handlerType;
-            RequestType = requestType;
+            RequestBodyType = requestBodyType;
+            ResponseBodyType = responseBodyType;
+            CommandType = commandType;
             ResultType = resultType;
             ResultCanBeNull = resultCanBeNull;
             Route = route;
@@ -281,7 +294,9 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 featureType: null,
                 featureName: null,
                 handlerType: null,
-                requestType: null,
+                requestBodyType: null,
+                responseBodyType: null,
+                commandType: null,
                 resultType: null,
                 resultCanBeNull: false,
                 route: route,
@@ -293,7 +308,9 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
             string featureType,
             string featureName,
             string handlerType,
-            string requestType,
+            string requestBodyType,
+            string responseBodyType,
+            string commandType,
             string resultType,
             bool resultCanBeNull,
             string route,
@@ -305,7 +322,9 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
                 featureType: featureType,
                 featureName: featureName,
                 handlerType: handlerType,
-                requestType: requestType,
+                requestBodyType: requestBodyType,
+                responseBodyType: responseBodyType,
+                commandType: commandType,
                 resultType: resultType,
                 resultCanBeNull: resultCanBeNull,
                 route: route,
@@ -318,7 +337,9 @@ public sealed class EndpointRegistrationGenerator : IIncrementalGenerator
         public string? FeatureType { get; }
         public string? FeatureName { get; }
         public string? HandlerType { get; }
-        public string? RequestType { get; }
+        public string? RequestBodyType { get; }
+        public string? ResponseBodyType { get; }
+        public string? CommandType { get; }
         public string? ResultType { get; }
         public bool ResultCanBeNull { get; }
         public string Route { get; }
