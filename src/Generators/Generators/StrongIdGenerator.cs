@@ -70,6 +70,7 @@ public class StrongIdGenerator : IIncrementalGenerator
         sb.AppendLine("{");
         sb.AppendLine(EmitNew(model));
         sb.AppendLine(EmitTryParse(model));
+        sb.AppendLine(EmitMustParse(model));
         sb.AppendLine();
         sb.AppendLine($"    public {model.Name}({model.UnderlyingTypeDisplay} value) => Value = value;");
         sb.AppendLine();
@@ -161,6 +162,27 @@ public class StrongIdGenerator : IIncrementalGenerator
             parseBody +
             "        value = new(parsed);\n" +
             "        return true;\n" +
+            "    }\n";
+    }
+
+    private static string EmitMustParse(StrongIdModel model)
+    {
+        var name = model.Name;
+
+        return
+            $"    public static {name} MustParse(string text)\n" +
+            "    {\n" +
+            "        if (string.IsNullOrWhiteSpace(text))\n" +
+            "        {\n" +
+            "            throw new global::System.ArgumentException(\"Value cannot be null or whitespace.\", nameof(text));\n" +
+            "        }\n" +
+            "\n" +
+            $"        if (!TryParse(text, out var value))\n" +
+            "        {\n" +
+            $"            throw new global::System.FormatException($\"Unable to parse {name} from '{{text}}'.\");\n" +
+            "        }\n" +
+            "\n" +
+            "        return value;\n" +
             "    }\n";
     }
 
