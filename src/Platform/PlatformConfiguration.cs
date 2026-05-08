@@ -9,6 +9,7 @@ public static class PlatformConfiguration
     {
         public void AddPlatform()
         {
+            builder.AddPlatformExceptionHandling();
             builder.AddPlatformTelemetry();
             builder.AddPlatformOpenApi();
         }
@@ -18,6 +19,7 @@ public static class PlatformConfiguration
     {
         public void UsePlatform()
         {
+            app.UsePlatformExceptionHandling();
             app.UsePlatformTelemetry();
             app.MapPlatformOpenApi();
         }
