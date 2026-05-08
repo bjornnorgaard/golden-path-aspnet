@@ -10,9 +10,8 @@ using WebApi.Json;
 var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.AddPlatform();
-builder.Services.AddOpenApi();
 builder.Services.RegisterGeneratedServices();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddValidatorsFromAssemblyContaining<AssemblyAnchor>();
 
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<TodoContext>((_, opts) => opts.UseNpgsql(cs));
@@ -24,7 +23,6 @@ builder.Services.ConfigureHttpJsonOptions(opts =>
 
 var app = builder.Build();
 app.UsePlatform();
-app.MapOpenApi();
 app.MapGeneratedEndpoints();
 
 app.Run();
