@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using WebApi.Database.Models;
-using WebApi.features.todos;
+using WebApi.Features.Todos;
 
 namespace WebApi.Endpoints.Todos;
 

@@ -3,7 +3,7 @@ using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
 
-namespace WebApi.features.todos;
+namespace WebApi.Features.Todos;
 
 public class GetTodo
 {

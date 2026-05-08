@@ -48,6 +48,7 @@ dotnet tool run dotnet-ef -- migrations bundle \
   --self-contained \
   --target-runtime linux-x64 \
   --configuration Release \
+  --project ../WebApi.csproj \
   --output ./efbundle
 ```
 

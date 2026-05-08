@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using WebApi.features.todos;
+using WebApi.Features.Todos;
 
 namespace WebApi.Endpoints.Todos;
 
@@ -19,7 +19,8 @@ public static class CreateTodoEndpoint
 
         var created = await handler.Handle(req, ct);
 
-        var location = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}{Routes.Todos.Create}/{created.Id}";
+        // Avoid relying on StrongId JSON shape; Location must be a plain string route.
+        var location = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}{Routes.Todos.Create}/{created.Id.Value}";
         return TypedResults.Created(location, new GetTodo.Result
         {
             Id = created.Id,

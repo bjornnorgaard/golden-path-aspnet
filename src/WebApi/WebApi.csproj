@@ -8,7 +8,6 @@
         <PublishAot>true</PublishAot>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <WarningsAsErrors>true</WarningsAsErrors>
-        <NoWarn>$(NoWarn);IL2026;IL3050;IL3053;IL2104</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

@@ -432,3 +432,6 @@ FodyWeavers.xsd
 .vscode
 .idea
 .cursor
+
+# OS generated files
+.DS_Store
