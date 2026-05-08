@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using TUnit.AspNetCore;
 
-namespace WebApi.Tests;
+namespace WebApi.Tests.Fixture;
 
-public sealed class FixtureFactory : TestWebApplicationFactory<Program>
+public sealed class TestApiFactory : TestWebApplicationFactory<Program>
 {
     [ClassDataSource<PostgresContainer>(Shared = SharedType.PerTestSession)]
     public PostgresContainer Postgres { get; init; } = null!;

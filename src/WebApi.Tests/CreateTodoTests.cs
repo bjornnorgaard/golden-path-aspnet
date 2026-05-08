@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi.Database;
 using WebApi.Endpoints;
+using WebApi.Tests.Fixture;
 
 namespace WebApi.Tests;
 

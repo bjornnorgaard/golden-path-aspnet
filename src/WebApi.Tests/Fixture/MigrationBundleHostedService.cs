@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 
-namespace WebApi.Tests;
+namespace WebApi.Tests.Fixture;
 
 public sealed record MigrationBundleOptions(string BundlePath, string ConnectionString);
 

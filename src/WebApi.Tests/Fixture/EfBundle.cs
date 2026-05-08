@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using TUnit.Core.Interfaces;
 
-namespace WebApi.Tests;
+namespace WebApi.Tests.Fixture;
 
 public sealed class EfBundle : IAsyncInitializer
 {
