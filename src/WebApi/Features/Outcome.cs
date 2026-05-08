@@ -22,11 +22,6 @@ public readonly struct Outcome<T>
         return new Outcome<T>(HttpStatusCode.OK, value, failure: null);
     }
 
-    public static Outcome<T> Fail(HttpStatusCode status, Failure failure)
-    {
-        return new Outcome<T>(status, value: default, failure);
-    }
-
     public static Outcome<T> Fail(HttpStatusCode status, string message, object? details = null)
     {
         return new Outcome<T>(status, value: default, new Failure(message, details));
@@ -40,11 +35,6 @@ public readonly struct Outcome<T>
     public static Outcome<T> NotFound(string message, object? details = null)
     {
         return Fail(HttpStatusCode.NotFound, message, details);
-    }
-
-    public static Outcome<T> Conflict(string message, object? details = null)
-    {
-        return Fail(HttpStatusCode.Conflict, message, details);
     }
 
     public static Outcome<T> InternalServerError(string message, object? details = null)
