@@ -93,20 +93,36 @@ public class StrongIdGenerator : IIncrementalGenerator
 
     private static string EmitNew(StrongIdModel model)
     {
-        return model.UnderlyingTypeDisplay switch
+        var sb = new StringBuilder();
+
+        switch (model.UnderlyingTypeDisplay)
         {
-            "global::System.Guid" =>
-                $"    public static {model.Name} New() => new(global::System.Guid.NewGuid());\n",
-            "global::System.Int32" =>
-                "    private static int _nextValue;\n" +
-                $"    public static {model.Name} New() => new(global::System.Threading.Interlocked.Increment(ref _nextValue));\n",
-            "global::System.Int64" =>
-                "    private static long _nextValue;\n" +
-                $"    public static {model.Name} New() => new(global::System.Threading.Interlocked.Increment(ref _nextValue));\n",
-            _ =>
-                $"    public static {model.Name} New() =>\n" +
-                "        throw new global::System.NotSupportedException(\"New() is only supported for Guid, int, and long strong IDs.\");\n"
-        };
+            case "global::System.Guid":
+                sb.Append("    public static ");
+                sb.Append(model.Name);
+                sb.AppendLine(" New() => new(global::System.Guid.NewGuid());");
+                break;
+            case "global::System.Int32":
+                sb.AppendLine("    private static int _nextValue;");
+                sb.Append("    public static ");
+                sb.Append(model.Name);
+                sb.AppendLine(" New() => new(global::System.Threading.Interlocked.Increment(ref _nextValue));");
+                break;
+            case "global::System.Int64":
+                sb.AppendLine("    private static long _nextValue;");
+                sb.Append("    public static ");
+                sb.Append(model.Name);
+                sb.AppendLine(" New() => new(global::System.Threading.Interlocked.Increment(ref _nextValue));");
+                break;
+            default:
+                sb.Append("    public static ");
+                sb.Append(model.Name);
+                sb.AppendLine(" New() =>");
+                sb.AppendLine("        throw new global::System.NotSupportedException(\"New() is only supported for Guid, int, and long strong IDs.\");");
+                break;
+        }
+
+        return sb.ToString();
     }
 
     private static string EmitTryParse(StrongIdModel model)
@@ -114,55 +130,66 @@ public class StrongIdGenerator : IIncrementalGenerator
         var name = model.Name;
         var underlying = model.UnderlyingTypeDisplay;
 
-        var parseBody = model.UnderlyingTypeDisplay switch
-        {
-            "global::System.Guid" =>
-                "        if (!global::System.Guid.TryParse(text, out var parsed))\n" +
-                "        {\n" +
-                "            value = default;\n" +
-                "            return false;\n" +
-                "        }\n",
-            "global::System.Int32" =>
-                "        if (!global::System.Int32.TryParse(\n" +
-                "                text,\n" +
-                "                global::System.Globalization.NumberStyles.Integer,\n" +
-                "                global::System.Globalization.CultureInfo.InvariantCulture,\n" +
-                "                out var parsed))\n" +
-                "        {\n" +
-                "            value = default;\n" +
-                "            return false;\n" +
-                "        }\n",
-            "global::System.Int64" =>
-                "        if (!global::System.Int64.TryParse(\n" +
-                "                text,\n" +
-                "                global::System.Globalization.NumberStyles.Integer,\n" +
-                "                global::System.Globalization.CultureInfo.InvariantCulture,\n" +
-                "                out var parsed))\n" +
-                "        {\n" +
-                "            value = default;\n" +
-                "            return false;\n" +
-                "        }\n",
-            _ =>
-                $"        if (!{underlying}.TryParse(text, out var parsed))\n" +
-                "        {\n" +
-                "            value = default;\n" +
-                "            return false;\n" +
-                "        }\n"
-        };
+        var sb = new StringBuilder();
 
-        return
-            $"    public static bool TryParse(string? text, out {name} value)\n" +
-            "    {\n" +
-            "        if (string.IsNullOrWhiteSpace(text))\n" +
-            "        {\n" +
-            "            value = default;\n" +
-            "            return false;\n" +
-            "        }\n" +
-            "\n" +
-            parseBody +
-            "        value = new(parsed);\n" +
-            "        return true;\n" +
-            "    }\n";
+        sb.Append("    public static bool TryParse(string? text, out ");
+        sb.Append(name);
+        sb.AppendLine(" value)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        if (string.IsNullOrWhiteSpace(text))");
+        sb.AppendLine("        {");
+        sb.AppendLine("            value = default;");
+        sb.AppendLine("            return false;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+
+        switch (underlying)
+        {
+            case "global::System.Guid":
+                sb.AppendLine("        if (!global::System.Guid.TryParse(text, out var parsed))");
+                sb.AppendLine("        {");
+                sb.AppendLine("            value = default;");
+                sb.AppendLine("            return false;");
+                sb.AppendLine("        }");
+                break;
+            case "global::System.Int32":
+                sb.AppendLine("        if (!global::System.Int32.TryParse(");
+                sb.AppendLine("                text,");
+                sb.AppendLine("                global::System.Globalization.NumberStyles.Integer,");
+                sb.AppendLine("                global::System.Globalization.CultureInfo.InvariantCulture,");
+                sb.AppendLine("                out var parsed))");
+                sb.AppendLine("        {");
+                sb.AppendLine("            value = default;");
+                sb.AppendLine("            return false;");
+                sb.AppendLine("        }");
+                break;
+            case "global::System.Int64":
+                sb.AppendLine("        if (!global::System.Int64.TryParse(");
+                sb.AppendLine("                text,");
+                sb.AppendLine("                global::System.Globalization.NumberStyles.Integer,");
+                sb.AppendLine("                global::System.Globalization.CultureInfo.InvariantCulture,");
+                sb.AppendLine("                out var parsed))");
+                sb.AppendLine("        {");
+                sb.AppendLine("            value = default;");
+                sb.AppendLine("            return false;");
+                sb.AppendLine("        }");
+                break;
+            default:
+                sb.Append("        if (!");
+                sb.Append(underlying);
+                sb.AppendLine(".TryParse(text, out var parsed))");
+                sb.AppendLine("        {");
+                sb.AppendLine("            value = default;");
+                sb.AppendLine("            return false;");
+                sb.AppendLine("        }");
+                break;
+        }
+
+        sb.AppendLine("        value = new(parsed);");
+        sb.AppendLine("        return true;");
+        sb.AppendLine("    }");
+
+        return sb.ToString();
     }
 
     private static string EmitMustParse(StrongIdModel model)
