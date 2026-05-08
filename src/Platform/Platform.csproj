@@ -16,10 +16,4 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <Reference Include="Microsoft.AspNetCore">
-            <HintPath>..\..\..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\10.0.0\Microsoft.AspNetCore.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-
 </Project>
