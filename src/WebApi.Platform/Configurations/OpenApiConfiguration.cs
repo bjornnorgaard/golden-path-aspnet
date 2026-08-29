@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Scalar.AspNetCore;
 
-namespace Platform.Configurations;
+namespace WebApi.Platform.Configurations;
 
 public static class OpenApiConfiguration
 {

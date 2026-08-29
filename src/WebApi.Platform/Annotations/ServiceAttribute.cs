@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Platform.Annotations;
+namespace WebApi.Platform.Annotations;
 
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class ServiceAttribute(ServiceLifetime lifetime, bool asSelf = false) : Attribute

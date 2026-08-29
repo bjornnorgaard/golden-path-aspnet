@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Platform\Platform.csproj"/>
+        <ProjectReference Include="..\WebApi.Platform\WebApi.Platform.csproj"/>
         <ProjectReference Include="..\Generators\Generators\Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" Properties="PublishAot=false" />
     </ItemGroup>
 

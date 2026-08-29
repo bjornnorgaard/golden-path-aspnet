@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Platform.Configurations;
+namespace WebApi.Platform.Configurations;
 
 public static class ExceptionHandlingConfiguration
 {

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Builder;
-using Platform.Configurations;
+using WebApi.Platform.Configurations;
 
-namespace Platform;
+namespace WebApi.Platform;
 
 public static class PlatformConfiguration
 {

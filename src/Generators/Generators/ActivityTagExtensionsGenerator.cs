@@ -12,7 +12,7 @@ namespace Generators;
 [Generator]
 public sealed class ActivityTagExtensionsGenerator : IIncrementalGenerator
 {
-    private const string TagKeyAttrFqn = "Platform.Annotations.TagKeyAttribute";
+    private const string TagKeyAttrFqn = "WebApi.Platform.Annotations.TagKeyAttribute";
 
     private static readonly DiagnosticDescriptor MissingTagValueTypeAttribute = new(
         id: "GP0001",

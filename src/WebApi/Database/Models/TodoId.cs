@@ -1,4 +1,4 @@
-using Platform.Annotations;
+using WebApi.Platform.Annotations;
 
 namespace WebApi.Database.Models;
 

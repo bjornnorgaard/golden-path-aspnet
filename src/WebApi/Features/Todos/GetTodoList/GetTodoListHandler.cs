@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Platform.Annotations;
+using WebApi.Platform.Annotations;
 using WebApi.Database;
 using WebApi.Configuration;
 using WebApi.Todos.Contracts;
