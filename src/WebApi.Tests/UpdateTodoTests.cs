@@ -17,7 +17,7 @@ public class UpdateTodoTests : TestBase
         // Arrange: create via API
         var create = await Client.PostAsJsonAsync(TestRoutes.Todos.Create, new CreateTodoApiRequest
         {
-            Title = "Todo to update",
+            Title = "A todo title that can be updated through the API",
             DueBy = null
         });
         await Assert.That(create.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -44,7 +44,7 @@ public class UpdateTodoTests : TestBase
         await Assert.That(updated!.Id).IsEqualTo(created.Id);
         await Assert.That(updated.Title).IsEqualTo("Updated title");
         await Assert.That(updated.IsComplete).IsTrue();
-        await Assert.That(updated.DueBy).IsEqualTo(newDueBy);
+        await Assert.That(updated.DueBy?.ToUniversalTime()).IsEqualTo(newDueBy);
 
         // Assert: DB state only
         await using var scope = Factory.Services.CreateAsyncScope();
@@ -74,8 +74,7 @@ public class UpdateTodoTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("\"errors\"");
-        await Assert.That(body).Contains("\"Title\"");
+        await Assert.That(body).Contains("Title");
         await Assert.That(body).Contains("at least 3");
     }
 
@@ -97,8 +96,8 @@ public class UpdateTodoTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("\"errors\"");
-        await Assert.That(body).Contains("\"Id\"");
+        await Assert.That(body).Contains("Id");
+        await Assert.That(body).Contains("correct format");
     }
 
     [Test]

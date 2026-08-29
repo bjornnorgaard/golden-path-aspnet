@@ -1,99 +1,38 @@
 using System.Diagnostics;
-using FluentValidation;
-using Platform.Annotations;
+using Microsoft.AspNetCore.Http.HttpResults;
 using WebApi.Database;
 using WebApi.Database.Models;
-using WebApi.Endpoints;
 using WebApi.Telemetry;
+using WebApi.Todos.Contracts;
+using WebApi.Todos.Endpoints;
+using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos;
 
-[Endpoint(Routes.Todos.Create, EndpointMethod.Post)]
-public class CreateTodo
-    : IFeature<CreateTodo.RequestBody, CreateTodo.ResponseBody, CreateTodo.Command, CreateTodo.Result, CreateTodo.Handler>
+public sealed class CreateTodo(TodoContext context) : ICreateTodoEndpoint
 {
-    public class RequestBody
+    public async Task<Results<Ok<CreateTodoResponse>, BadRequest<string>>> HandleAsync(
+        CreateTodoRequest request,
+        CancellationToken ct)
     {
-        public required string Title { get; init; }
-        public DateTime? DueBy { get; init; }
-    }
-
-    public class ResponseBody
-    {
-        public TodoId Id { get; init; }
-        public required string Title { get; init; }
-        public DateTime? DueBy { get; init; }
-        public bool IsComplete { get; init; }
-    }
-
-    // ReSharper disable once UnusedType.Global
-    public sealed class Validator : AbstractValidator<RequestBody>
-    {
-        public Validator()
+        var dbTodo = new Todo
         {
-            RuleFor(x => x.Title).NotEmpty().MinimumLength(3);
-        }
-    }
-
-    public class Command
-    {
-        public required string Title { get; init; }
-        public DateTime? DueBy { get; init; }
-    }
-
-    public class Result
-    {
-        public TodoId Id { get; init; }
-        public required string Title { get; init; }
-        public DateTime? DueBy { get; init; }
-        public bool IsComplete { get; init; }
-    }
-
-    public static Command MapToCommand(RequestBody request)
-    {
-        return new Command
-        {
+            Id = TodoId.New(),
             Title = request.Title,
-            DueBy = request.DueBy
+            DueBy = request.DueBy?.UtcDateTime,
+            IsComplete = false
         };
-    }
 
-    public static ResponseBody MapToResponseBody(Result result)
-    {
-        return new ResponseBody
+        Activity.Current?.SetTodoId(dbTodo.Id);
+        await context.Todos.AddAsync(dbTodo, ct);
+        await context.SaveChangesAsync(ct);
+
+        return TypedResults.Ok(new CreateTodoResponse
         {
-            Id = result.Id,
-            Title = result.Title,
-            DueBy = result.DueBy,
-            IsComplete = result.IsComplete
-        };
-    }
-
-    [Service(lifetime: ServiceLifetime.Transient)]
-    public class Handler(TodoContext context)
-    {
-        public async Task<Outcome<Result>> Handle(Command cmd, CancellationToken ct)
-        {
-            var dbTodo = new Todo
-            {
-                Id = TodoId.New(),
-                Title = cmd.Title,
-                DueBy = cmd.DueBy,
-                IsComplete = false
-            };
-
-            Activity.Current?.SetTodoId(dbTodo.Id);
-
-            await context.Todos.AddAsync(dbTodo, ct);
-            await context.SaveChangesAsync(ct);
-
-            return Outcome<Result>.Ok(new Result
-            {
-                Id = dbTodo.Id,
-                Title = dbTodo.Title,
-                DueBy = dbTodo.DueBy,
-                IsComplete = dbTodo.IsComplete
-            });
-        }
+            Id = dbTodo.Id,
+            Title = dbTodo.Title,
+            DueBy = dbTodo.DueBy,
+            IsComplete = dbTodo.IsComplete
+        });
     }
 }

@@ -9,10 +9,10 @@ using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos;
 
-public sealed class GetTodoById(TodoContext context) : IGetTodoByIdEndpoint
+public sealed class ToggleTodo(TodoContext context) : IToggleTodoEndpoint
 {
-    public async Task<Results<Ok<GetTodoByIdResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
-        GetTodoByIdRequest request,
+    public async Task<Results<Ok<ToggleTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+        ToggleTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
@@ -22,13 +22,16 @@ public sealed class GetTodoById(TodoContext context) : IGetTodoByIdEndpoint
 
         Activity.Current?.SetTodoId(todoId);
 
-        var todo = await context.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == todoId, ct);
+        var todo = await context.Todos.FirstOrDefaultAsync(item => item.Id == todoId, ct);
         if (todo is null)
         {
             return TypedResults.NotFound("Todo was not found.");
         }
 
-        return TypedResults.Ok(new GetTodoByIdResponse
+        todo.IsComplete = !todo.IsComplete;
+        await context.SaveChangesAsync(ct);
+        
+        return TypedResults.Ok(new ToggleTodoResponse
         {
             Id = todo.Id.Value,
             Title = todo.Title,

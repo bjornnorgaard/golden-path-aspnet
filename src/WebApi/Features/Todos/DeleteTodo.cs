@@ -1,80 +1,36 @@
 using System.Diagnostics;
-using FluentValidation;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
-using Platform.Annotations;
 using WebApi.Database;
-using WebApi.Database.Models;
-using WebApi.Endpoints;
 using WebApi.Telemetry;
+using WebApi.Todos.Contracts;
+using WebApi.Todos.Endpoints;
+using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos;
 
-[Endpoint(Routes.Todos.Delete, EndpointMethod.Post)]
-public class DeleteTodo
-    : IFeature<DeleteTodo.RequestBody, DeleteTodo.ResponseBody, DeleteTodo.Command, DeleteTodo.Result, DeleteTodo.Handler>
+public sealed class DeleteTodo(TodoContext context) : IDeleteTodoEndpoint
 {
-    public class RequestBody
+    public async Task<Results<Ok<DeleteTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+        DeleteTodoRequest request,
+        CancellationToken ct)
     {
-        public required string Id { get; init; }
-    }
-
-    public class ResponseBody
-    {
-        public required TodoId Id { get; init; }
-    }
-
-    // ReSharper disable once UnusedType.Global
-    public sealed class Validator : AbstractValidator<RequestBody>
-    {
-        public Validator()
+        if (!TodoId.TryParse(request.Id, out var todoId))
         {
-            RuleFor(x => x.Id).NotEmpty().Must(id => TodoId.TryParse(id, out _));
+            return TypedResults.BadRequest("Id must be a valid UUID.");
         }
-    }
+        
+        Activity.Current?.SetTodoId(todoId);
 
-    public class Command
-    {
-        public required TodoId Id { get; init; }
-    }
-
-    public class Result
-    {
-        public required TodoId Id { get; init; }
-    }
-
-    public static Command MapToCommand(RequestBody request)
-    {
-        return new Command
+        var deleted = await context.Todos
+            .Where(todo => todo.Id == todoId)
+            .ExecuteDeleteAsync(ct);
+        
+        if (deleted == 0)
         {
-            Id = TodoId.MustParse(request.Id)
-        };
-    }
-
-    public static ResponseBody MapToResponseBody(Result result)
-    {
-        return new ResponseBody
-        {
-            Id = result.Id
-        };
-    }
-
-    [Service(lifetime: ServiceLifetime.Transient)]
-    public class Handler(TodoContext context)
-    {
-        public async Task<Outcome<Result>> Handle(Command cmd, CancellationToken ct)
-        {
-            Activity.Current?.SetTodoId(cmd.Id);
-
-            var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == cmd.Id, ct);
-            if (todo == null)
-            {
-                return Outcome<Result>.NotFound("Todo was not found.");
-            }
-
-            context.Todos.Remove(todo);
-            await context.SaveChangesAsync(ct);
-
-            return Outcome<Result>.Ok(new Result { Id = cmd.Id });
+            return TypedResults.NotFound("Todo was not found.");
         }
+
+        return TypedResults.Ok(new DeleteTodoResponse { Id = todoId.Value });
     }
 }

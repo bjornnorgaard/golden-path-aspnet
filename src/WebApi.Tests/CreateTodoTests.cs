@@ -15,7 +15,7 @@ public class CreateTodoTests : TestBase
     public async Task CreateTodo_Success()
     {
         // Arrange
-        const string expectedTitle = "Test Todo";
+        const string expectedTitle = "A todo title that satisfies the OpenAPI minimum";
 
         // POST request to create the item
         var createTodoRequest = new CreateTodoApiRequest { Title = expectedTitle, DueBy = null };
@@ -59,8 +59,7 @@ public class CreateTodoTests : TestBase
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("\"errors\"");
-        await Assert.That(body).Contains("\"Title\"");
-        await Assert.That(body).Contains("at least 3");
+        await Assert.That(body).Contains("Title");
+        await Assert.That(body).Contains("at least 30");
     }
 }

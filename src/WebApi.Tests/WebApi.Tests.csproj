@@ -5,6 +5,7 @@
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <WarningsAsErrors>true</WarningsAsErrors>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 

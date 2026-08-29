@@ -11,24 +11,24 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="FluentValidation" Version="12.1.1"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3"/>
-        <PackageReference Include="FluentValidation" Version="12.1.1"/>
-        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Platform\Platform.csproj"/>
-        <ProjectReference Include="..\Generators\Generators\Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <ProjectReference Include="..\Generators\Generators\Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" Properties="PublishAot=false" />
     </ItemGroup>
 
     <ItemGroup>
         <!-- Needed to source-generated types for configuration -->
         <AdditionalFiles Include="appsettings.json"/>
+        <AdditionalFiles Include="OpenApi/todos.openapi.yaml" />
     </ItemGroup>
 
 </Project>

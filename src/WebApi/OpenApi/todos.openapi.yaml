@@ -1,0 +1,310 @@
+openapi: 3.1.0
+info:
+  title: Todos API
+  version: 1.0.0
+  description: |
+    A small task-management API. The specification is the HTTP contract source of truth:
+    routes, request binding, response serialization, and documented error statuses are
+    generated from this document. Business rules are enforced by operation handlers.
+paths:
+  /todos/create:
+    post:
+      operationId: createTodo
+      summary: Create a todo
+      description: Creates an incomplete todo. Titles must contain at least three non-whitespace characters.
+      tags: [Todos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '200':
+          description: Todo created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTodoResponse'
+        '400':
+          description: The title violates the create-todo business rules.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /todos/get-by-id:
+    post:
+      operationId: getTodoById
+      summary: Get a todo by ID
+      description: Returns a todo identified by its UUID.
+      tags: [Todos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTodoByIdRequest'
+      responses:
+        '200':
+          description: Todo found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTodoByIdResponse'
+        '400':
+          description: The supplied todo ID is invalid.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: No todo exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /todos/get-list:
+    post:
+      operationId: getTodoList
+      summary: List todos
+      description: Returns todos ordered by ID. Omitted paging values default to page 1 and page size 50.
+      tags: [Todos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetTodoListRequest'
+      responses:
+        '200':
+          description: Todo page returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetTodoListResponse'
+        '400':
+          description: The paging request violates the list-todos business rules.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /todos/update:
+    post:
+      operationId: updateTodo
+      summary: Update a todo
+      description: Replaces a todo's title, due date, and completion state.
+      tags: [Todos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoRequest'
+      responses:
+        '200':
+          description: Todo updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTodoResponse'
+        '400':
+          description: The update request violates the business rules.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: No todo exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /todos/toggle:
+    post:
+      operationId: toggleTodo
+      summary: Toggle a todo
+      description: Toggles a todo's completion state.
+      tags: [Todos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleTodoRequest'
+      responses:
+        '200':
+          description: Todo toggled successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToggleTodoResponse'
+        '400':
+          description: The update request violates the business rules.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: No todo exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /todos/delete:
+    post:
+      operationId: deleteTodo
+      summary: Delete a todo
+      description: Permanently deletes a todo identified by its UUID.
+      tags: [Todos]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteTodoRequest'
+      responses:
+        '200':
+          description: Todo deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteTodoResponse'
+        '400':
+          description: The supplied todo ID is invalid.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: No todo exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    TodoId:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The todo's stable UUID.
+    GetTodoByIdRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          description: The UUID of the todo to operate on.
+    DeleteTodoRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          description: The UUID of the todo to delete.
+    CreateTodoRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 30
+          description: The non-empty title of the todo.
+        dueBy:
+          type: [string, 'null']
+          format: date-time
+          description: Optional UTC due date.
+    UpdateTodoRequest:
+      type: object
+      required: [id, title, isComplete]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+        title:
+          type: string
+          minLength: 3
+        dueBy:
+          type: [string, 'null']
+          format: date-time
+        isComplete:
+          type: boolean
+    ToggleTodoRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    GetTodoListRequest:
+      type: object
+      properties:
+        page:
+          type: [integer, 'null']
+          format: int32
+          minimum: 1
+          default: 1
+        pageSize:
+          type: [integer, 'null']
+          format: int32
+          minimum: 1
+          maximum: 200
+          default: 50
+    CreateTodoResponse:
+      type: object
+      required: [id, title, isComplete]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        dueBy: { type: [string, 'null'], format: date-time }
+        isComplete: { type: boolean }
+    GetTodoByIdResponse:
+      type: object
+      required: [id, title, isComplete]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        dueBy: { type: [string, 'null'], format: date-time }
+        isComplete: { type: boolean }
+    GetTodoListResponse:
+      type: object
+      required: [todos]
+      properties:
+        todos:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetTodoListItem'
+    GetTodoListItem:
+      type: object
+      required: [id, title, isComplete]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        dueBy: { type: [string, 'null'], format: date-time }
+        isComplete: { type: boolean }
+    UpdateTodoResponse:
+      type: object
+      required: [id, title, isComplete]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        dueBy: { type: [string, 'null'], format: date-time }
+        isComplete: { type: boolean }
+    ToggleTodoResponse:
+      type: object
+      required: [id, title, isComplete]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        dueBy: { type: [string, 'null'], format: date-time }
+        isComplete: { type: boolean }
+    DeleteTodoResponse:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, format: uuid }

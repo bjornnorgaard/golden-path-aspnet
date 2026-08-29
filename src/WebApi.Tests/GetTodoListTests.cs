@@ -72,8 +72,8 @@ public class GetTodoListTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("\"errors\"");
-        await Assert.That(body).Contains("\"Page\"");
+        await Assert.That(body).Contains("Page");
+        await Assert.That(body).Contains("greater than or equal to '1'");
     }
 
     [Test]
@@ -88,7 +88,7 @@ public class GetTodoListTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("\"errors\"");
-        await Assert.That(body).Contains("\"PageSize\"");
+        await Assert.That(body).Contains("PageSize");
+        await Assert.That(body).Contains("greater than or equal to '1'");
     }
 }

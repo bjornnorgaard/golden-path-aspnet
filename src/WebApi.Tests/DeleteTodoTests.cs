@@ -17,7 +17,7 @@ public class DeleteTodoTests : TestBase
         // Arrange: create via API
         var create = await Client.PostAsJsonAsync(TestRoutes.Todos.Create, new CreateTodoApiRequest
         {
-            Title = "Todo to delete",
+            Title = "A todo title that can be deleted through the API",
             DueBy = null
         });
         await Assert.That(create.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -53,8 +53,8 @@ public class DeleteTodoTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("\"errors\"");
-        await Assert.That(body).Contains("\"Id\"");
+        await Assert.That(body).Contains("Id");
+        await Assert.That(body).Contains("correct format");
     }
 
     [Test]
