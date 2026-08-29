@@ -16,29 +16,40 @@ public static class TelemetryConfiguration
     {
         public void AddPlatformTelemetry()
         {
-            var telemetry = builder.Configuration.GetTelemetry();
-            var collectorEndpoint = new Uri(telemetry.CollectorEndpoint, UriKind.Absolute);
+            var collectorEndpoint = builder.Configuration["Telemetry:CollectorEndpoint"];
+            if (collectorEndpoint == null)
+            {
+                throw new InvalidOperationException("Required configuration value is missing: Telemetry:CollectorEndpoint");
+            }
+
+            var serviceName = builder.Configuration["Telemetry:ServiceName"];
+            if (serviceName == null)
+            {
+                throw new InvalidOperationException("Required configuration value is missing: Telemetry:ServiceName");
+            }
+
+            var endpoint = new Uri(collectorEndpoint, UriKind.Absolute);
 
             var resourceBuilder = ResourceBuilder
                 .CreateDefault()
-                .AddService(serviceName: telemetry.ServiceName);
+                .AddService(serviceName: serviceName);
 
             builder.Services
                 .AddOpenTelemetry()
                 .ConfigureResource(resource => resource
-                    .AddService(serviceName: telemetry.ServiceName))
+                    .AddService(serviceName: serviceName))
                 .WithTracing(tracing => tracing
                     .SetResourceBuilder(resourceBuilder)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddNpgsql()
-                    .AddOtlpExporter(o => o.Endpoint = collectorEndpoint))
+                    .AddOtlpExporter(o => o.Endpoint = endpoint))
                 .WithMetrics(metrics => metrics
                     .SetResourceBuilder(resourceBuilder)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
-                    .AddOtlpExporter(o => o.Endpoint = collectorEndpoint));
+                    .AddOtlpExporter(o => o.Endpoint = endpoint));
 
             builder.Logging.AddOpenTelemetry(logging =>
             {
@@ -46,15 +57,8 @@ public static class TelemetryConfiguration
                 logging.IncludeFormattedMessage = true;
                 logging.IncludeScopes = true;
                 logging.ParseStateValues = true;
-                logging.AddOtlpExporter(o => o.Endpoint = collectorEndpoint);
+                logging.AddOtlpExporter(o => o.Endpoint = endpoint);
             });
-        }
-    }
-
-    extension(WebApplication app)
-    {
-        public void UsePlatformTelemetry()
-        {
         }
     }
 }

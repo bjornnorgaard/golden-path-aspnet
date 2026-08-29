@@ -50,6 +50,19 @@ public class GetTodoListTests : TestBase
     [Test]
     public async Task GetTodoList_DefaultPaging_Success()
     {
+        // Arrange
+        await using (var scope = Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TodoContext>();
+            await db.Todos.AddRangeAsync(Enumerable.Range(1, 25).Select(i => new Todo
+            {
+                Id = TodoId.New(),
+                Title = $"Default page {i:00}",
+                IsComplete = false
+            }));
+            await db.SaveChangesAsync();
+        }
+
         // Act
         var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, new GetTodoListApiRequest());
 
@@ -57,7 +70,37 @@ public class GetTodoListTests : TestBase
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<GetTodoListResponse>();
         await Assert.That(body).IsNotNull();
-        await Assert.That(body!.Todos).IsNotNull();
+        await Assert.That(body!.Todos.Count).IsEqualTo(20);
+    }
+
+    [Test]
+    public async Task GetTodoList_PageSizeAboveConfiguredMaximum_IsCapped()
+    {
+        // Arrange
+        await using (var scope = Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<TodoContext>();
+            await db.Todos.AddRangeAsync(Enumerable.Range(1, 120).Select(i => new Todo
+            {
+                Id = TodoId.New(),
+                Title = $"Maximum page {i:000}",
+                IsComplete = false
+            }));
+            await db.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, new GetTodoListApiRequest
+        {
+            Page = 1,
+            PageSize = 200
+        });
+
+        // Assert
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<GetTodoListResponse>();
+        await Assert.That(body).IsNotNull();
+        await Assert.That(body!.Todos.Count).IsEqualTo(100);
     }
 
     [Test]

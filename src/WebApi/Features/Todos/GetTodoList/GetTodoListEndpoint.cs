@@ -10,10 +10,7 @@ internal sealed class GetTodoListEndpoint(GetTodoListHandler handler) : IGetTodo
         GetTodoListRequest request,
         CancellationToken ct)
     {
-        var page = request.Page ?? 1;
-        var pageSize = request.PageSize ?? 50;
-
-        var todos = await handler.HandleAsync(page, pageSize, ct);
+        var todos = await handler.HandleAsync(request.Page, request.PageSize, ct);
 
         return TypedResults.Ok(new GetTodoListResponse
         {

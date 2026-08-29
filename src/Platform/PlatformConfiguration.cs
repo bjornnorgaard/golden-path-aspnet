@@ -20,7 +20,6 @@ public static class PlatformConfiguration
         public void UsePlatform()
         {
             app.UsePlatformExceptionHandling();
-            app.UsePlatformTelemetry();
             app.MapPlatformOpenApi();
         }
     }

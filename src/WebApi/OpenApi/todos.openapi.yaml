@@ -254,7 +254,7 @@ components:
           format: int32
           minimum: 1
           maximum: 200
-          default: 50
+          default: 20
     CreateTodoResponse:
       type: object
       required: [id, title, isComplete]
