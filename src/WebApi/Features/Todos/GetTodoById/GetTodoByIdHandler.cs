@@ -4,7 +4,7 @@ using WebApi.Database;
 using WebApi.Database.Models;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.GetTodoById;
 
 [Service(ServiceLifetime.Transient)]
 internal sealed class GetTodoByIdHandler(TodoContext context)

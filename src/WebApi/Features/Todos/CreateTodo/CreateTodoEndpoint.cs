@@ -4,7 +4,7 @@ using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.CreateTodo;
 
 internal sealed class CreateTodoEndpoint(CreateTodoHandler handler) : ICreateTodoEndpoint
 {

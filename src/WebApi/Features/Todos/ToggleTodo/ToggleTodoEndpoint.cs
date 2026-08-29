@@ -5,12 +5,12 @@ using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.ToggleTodo;
 
-internal sealed class GetTodoByIdEndpoint(GetTodoByIdHandler handler) : IGetTodoByIdEndpoint
+internal sealed class ToggleTodoEndpoint(ToggleTodoHandler handler) : IToggleTodoEndpoint
 {
-    public async Task<Results<Ok<GetTodoByIdResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
-        GetTodoByIdRequest request,
+    public async Task<Results<Ok<ToggleTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+        ToggleTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
@@ -26,7 +26,7 @@ internal sealed class GetTodoByIdEndpoint(GetTodoByIdHandler handler) : IGetTodo
             return TypedResults.NotFound("Todo was not found.");
         }
 
-        return TypedResults.Ok(new GetTodoByIdResponse
+        return TypedResults.Ok(new ToggleTodoResponse
         {
             Id = todo.Id.Value,
             Title = todo.Title,

@@ -5,7 +5,7 @@ using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.DeleteTodo;
 
 internal sealed class DeleteTodoEndpoint(DeleteTodoHandler handler) : IDeleteTodoEndpoint
 {

@@ -4,7 +4,7 @@ using WebApi.Database.Models;
 using WebApi.Todos.Contracts;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.CreateTodo;
 
 [Service(ServiceLifetime.Transient)]
 internal sealed class CreateTodoHandler(TodoContext context)

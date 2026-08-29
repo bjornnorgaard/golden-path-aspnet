@@ -3,7 +3,7 @@ using Platform.Annotations;
 using WebApi.Database;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.DeleteTodo;
 
 [Service(ServiceLifetime.Transient)]
 internal sealed class DeleteTodoHandler(TodoContext context)

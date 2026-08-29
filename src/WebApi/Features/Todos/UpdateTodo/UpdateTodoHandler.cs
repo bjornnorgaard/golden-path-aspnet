@@ -2,14 +2,15 @@ using Microsoft.EntityFrameworkCore;
 using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Todos.Contracts;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.UpdateTodo;
 
 [Service(ServiceLifetime.Transient)]
-internal sealed class ToggleTodoHandler(TodoContext context)
+internal sealed class UpdateTodoHandler(TodoContext context)
 {
-    public async Task<Todo?> HandleAsync(TodoId todoId, CancellationToken ct)
+    public async Task<Todo?> HandleAsync(TodoId todoId, UpdateTodoRequest request, CancellationToken ct)
     {
         var todo = await context.Todos.FirstOrDefaultAsync(item => item.Id == todoId, ct);
 
@@ -18,7 +19,9 @@ internal sealed class ToggleTodoHandler(TodoContext context)
             return null;
         }
 
-        todo.IsComplete = !todo.IsComplete;
+        todo.Title = request.Title;
+        todo.DueBy = request.DueBy?.UtcDateTime;
+        todo.IsComplete = request.IsComplete;
         await context.SaveChangesAsync(ct);
         return todo;
     }

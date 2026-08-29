@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.GetTodoList;
 
 internal sealed class GetTodoListEndpoint(GetTodoListHandler handler) : IGetTodoListEndpoint
 {

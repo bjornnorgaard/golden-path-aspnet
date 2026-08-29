@@ -5,7 +5,7 @@ using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
 using TodoId = WebApi.Database.Models.TodoId;
 
-namespace WebApi.Features.Todos;
+namespace WebApi.Features.Todos.UpdateTodo;
 
 internal sealed class UpdateTodoEndpoint(UpdateTodoHandler handler) : IUpdateTodoEndpoint
 {
