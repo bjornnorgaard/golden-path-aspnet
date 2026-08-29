@@ -26,6 +26,7 @@ public class UpdateTodoTests : TestBase
         await Assert.That(created).IsNotNull();
 
         var newDueBy = DateTime.UtcNow.AddDays(3);
+        newDueBy = newDueBy.AddTicks(-(newDueBy.Ticks % TimeSpan.TicksPerMicrosecond));
 
         // Act
         var response = await Client.PostAsJsonAsync(TestRoutes.Todos.Update, new UpdateTodoApiRequest
