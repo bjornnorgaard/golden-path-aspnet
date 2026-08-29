@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using TUnit.Core.Interfaces;
 
 namespace WebApi.Tests.Fixture;
@@ -12,7 +13,8 @@ public sealed class EfBundle : IAsyncInitializer
         var repoRoot = FindRepoRoot(AppContext.BaseDirectory);
         var srcDir = Path.Combine(repoRoot, "src");
 
-        BundlePath = Path.Combine(Path.GetTempPath(), "goldenpath-webapi-efbundle");
+        var runtimeIdentifier = RuntimeInformation.RuntimeIdentifier;
+        BundlePath = Path.Combine(Path.GetTempPath(), $"goldenpath-webapi-efbundle-{runtimeIdentifier}");
 
         if (File.Exists(BundlePath))
         {
@@ -27,7 +29,7 @@ public sealed class EfBundle : IAsyncInitializer
             RedirectStandardError = true,
             Arguments =
                 "tool run dotnet-ef -- migrations bundle " +
-                "--target-runtime osx-arm64 " +
+                $"--target-runtime {runtimeIdentifier} " +
                 "--configuration Release " +
                 "--project ./WebApi/WebApi.csproj " +
                 $"--output \"{BundlePath}\""
