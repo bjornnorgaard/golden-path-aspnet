@@ -1,21 +1,16 @@
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Platform.Annotations;
 using WebApi.Database;
 using WebApi.Todos.Contracts;
-using WebApi.Todos.Endpoints;
 
 namespace WebApi.Features.Todos;
 
-public sealed class GetTodoList(TodoContext context) : IGetTodoListEndpoint
+[Service(ServiceLifetime.Transient)]
+internal sealed class GetTodoListHandler(TodoContext context)
 {
-    public async Task<Results<Ok<GetTodoListResponse>, BadRequest<string>>> HandleAsync(
-        GetTodoListRequest request,
-        CancellationToken ct)
+    public Task<GetTodoListItem[]> HandleAsync(int page, int pageSize, CancellationToken ct)
     {
-        var page = request.Page ?? 1;
-        var pageSize = request.PageSize ?? 50;
-
-        var todos = await context.Todos
+        return context.Todos
             .AsNoTracking()
             .OrderBy(todo => todo.Id)
             .Skip((page - 1) * pageSize)
@@ -28,10 +23,5 @@ public sealed class GetTodoList(TodoContext context) : IGetTodoListEndpoint
                 IsComplete = todo.IsComplete
             })
             .ToArrayAsync(ct);
-
-        return TypedResults.Ok(new GetTodoListResponse
-        {
-            Todos = todos
-        });
     }
 }

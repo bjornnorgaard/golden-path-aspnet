@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
-using WebApi.Database;
 using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
@@ -9,28 +7,31 @@ using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos;
 
-public sealed class DeleteTodo(TodoContext context) : IDeleteTodoEndpoint
+internal sealed class UpdateTodoEndpoint(UpdateTodoHandler handler) : IUpdateTodoEndpoint
 {
-    public async Task<Results<Ok<DeleteTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
-        DeleteTodoRequest request,
+    public async Task<Results<Ok<UpdateTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+        UpdateTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
         {
             return TypedResults.BadRequest("Id must be a valid UUID.");
         }
-        
+
         Activity.Current?.SetTodoId(todoId);
 
-        var deleted = await context.Todos
-            .Where(todo => todo.Id == todoId)
-            .ExecuteDeleteAsync(ct);
-        
-        if (deleted == 0)
+        var todo = await handler.HandleAsync(todoId, request, ct);
+        if (todo is null)
         {
             return TypedResults.NotFound("Todo was not found.");
         }
 
-        return TypedResults.Ok(new DeleteTodoResponse { Id = todoId.Value });
+        return TypedResults.Ok(new UpdateTodoResponse
+        {
+            Id = todo.Id.Value,
+            Title = todo.Title,
+            DueBy = todo.DueBy,
+            IsComplete = todo.IsComplete
+        });
     }
 }

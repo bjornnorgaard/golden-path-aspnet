@@ -70,7 +70,7 @@ public class ServiceRegistrationGenerator : IIncrementalGenerator
                 }
             }
 
-            if (impl.IsAbstract || impl.DeclaredAccessibility != Accessibility.Public)
+            if (impl.IsAbstract || impl.DeclaredAccessibility is not (Accessibility.Public or Accessibility.Internal))
             {
                 return null;
             }

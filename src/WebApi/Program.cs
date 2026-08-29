@@ -7,6 +7,7 @@ var builder = WebApplication.CreateSlimBuilder(args);
 
 builder.AddPlatform();
 builder.AddWebApiGeneratedConfiguration();
+builder.RegisterGeneratedServices();
 builder.Services.AddGeneratedOpenApiEndpoints();
 
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");

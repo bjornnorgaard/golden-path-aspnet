@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
-using WebApi.Database;
 using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
@@ -9,7 +7,7 @@ using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos;
 
-public sealed class GetTodoById(TodoContext context) : IGetTodoByIdEndpoint
+internal sealed class GetTodoByIdEndpoint(GetTodoByIdHandler handler) : IGetTodoByIdEndpoint
 {
     public async Task<Results<Ok<GetTodoByIdResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
         GetTodoByIdRequest request,
@@ -22,7 +20,7 @@ public sealed class GetTodoById(TodoContext context) : IGetTodoByIdEndpoint
 
         Activity.Current?.SetTodoId(todoId);
 
-        var todo = await context.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == todoId, ct);
+        var todo = await handler.HandleAsync(todoId, ct);
         if (todo is null)
         {
             return TypedResults.NotFound("Todo was not found.");

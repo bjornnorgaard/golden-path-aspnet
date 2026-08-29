@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
-using WebApi.Database;
 using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.Endpoints;
@@ -9,10 +7,10 @@ using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos;
 
-public sealed class UpdateTodo(TodoContext context) : IUpdateTodoEndpoint
+internal sealed class ToggleTodoEndpoint(ToggleTodoHandler handler) : IToggleTodoEndpoint
 {
-    public async Task<Results<Ok<UpdateTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
-        UpdateTodoRequest request,
+    public async Task<Results<Ok<ToggleTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+        ToggleTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
@@ -22,19 +20,13 @@ public sealed class UpdateTodo(TodoContext context) : IUpdateTodoEndpoint
 
         Activity.Current?.SetTodoId(todoId);
 
-        var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == todoId, ct);
+        var todo = await handler.HandleAsync(todoId, ct);
         if (todo is null)
         {
             return TypedResults.NotFound("Todo was not found.");
         }
 
-        todo.Title = request.Title;
-        todo.DueBy = request.DueBy?.UtcDateTime;
-        todo.IsComplete = request.IsComplete;
-
-        await context.SaveChangesAsync(ct);
-
-        return TypedResults.Ok(new UpdateTodoResponse
+        return TypedResults.Ok(new ToggleTodoResponse
         {
             Id = todo.Id.Value,
             Title = todo.Title,
