@@ -1,6 +1,6 @@
 services:
   webapi:
-    image: goldenpathaspnet-webapi
+    image: golden-path-aspnet-webapi
     build:
       context: ./src
       dockerfile: WebApi/Dockerfile
