@@ -97,6 +97,10 @@ type Mutation {
         await Assert.That(generated).Contains("public interface IGetTodoListResolver");
         await Assert.That(generated).Contains("public interface ICreateTodoResolver");
         await Assert.That(generated).Contains("IGetTodoListResolver resolver");
+        await Assert.That(generated).Contains("new(\"GoldenPath.GraphQL\")");
+        await Assert.That(generated).Contains("Activity.Current?.SetTag(\"graphql.operation.name\", operationName)");
+        await Assert.That(generated).Contains("const string operationName = \"graphql.query.getTodoList\"");
+        await Assert.That(generated).Contains("const string operationName = \"graphql.mutation.createTodo\"");
     }
 
     [Test]

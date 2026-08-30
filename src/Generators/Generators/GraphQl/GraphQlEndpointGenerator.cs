@@ -95,12 +95,22 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         sb.AppendLine("}");
         sb.AppendLine();
 
-        EmitOperationType(sb, $"{classPrefix}Query", queryOperations, contractsNamespace);
-        EmitOperationType(sb, $"{classPrefix}Mutation", mutationOperations, contractsNamespace);
+        EmitTelemetry(sb, classPrefix);
+        EmitOperationType(sb, $"{classPrefix}Query", $"{classPrefix}Telemetry", queryOperations, contractsNamespace);
+        EmitOperationType(sb, $"{classPrefix}Mutation", $"{classPrefix}Telemetry", mutationOperations, contractsNamespace);
         return sb.ToString();
     }
 
-    private static void EmitOperationType(StringBuilder sb, string typeName, GraphQlOperation[] operations, string contractsNamespace)
+    private static void EmitTelemetry(StringBuilder sb, string classPrefix)
+    {
+        sb.AppendLine($"internal static class {classPrefix}Telemetry");
+        sb.AppendLine("{");
+        sb.AppendLine("    internal static readonly global::System.Diagnostics.ActivitySource ActivitySource = new(\"GoldenPath.GraphQL\");");
+        sb.AppendLine("}");
+        sb.AppendLine();
+    }
+
+    private static void EmitOperationType(StringBuilder sb, string typeName, string telemetryTypeName, GraphQlOperation[] operations, string contractsNamespace)
     {
         sb.AppendLine($"public sealed class {typeName}");
         sb.AppendLine("{");
@@ -110,12 +120,25 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             sb.AppendLine($"    [global::HotChocolate.GraphQLNameAttribute(\"{operation.Id}\")]");
             sb.AppendLine($"    public async global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> {ToPascalCase(operation.Id)}Async(global::{contractsNamespace}.{operation.RequestType} input, [global::HotChocolate.ServiceAttribute] {interfaceName} resolver, [global::HotChocolate.ServiceAttribute] global::FluentValidation.IValidator<global::{contractsNamespace}.{operation.RequestType}> validator, global::System.Threading.CancellationToken ct)");
             sb.AppendLine("    {");
-            sb.AppendLine("        var validation = await validator.ValidateAsync(input, ct);");
-            sb.AppendLine("        if (!validation.IsValid)");
+            sb.AppendLine($"        const string operationName = \"graphql.{operation.OperationType.ToLowerInvariant()}.{operation.Id}\";");
+            sb.AppendLine("        global::System.Diagnostics.Activity.Current?.SetTag(\"graphql.operation.name\", operationName);");
+            sb.AppendLine($"        using var activity = {telemetryTypeName}.ActivitySource.StartActivity(operationName, global::System.Diagnostics.ActivityKind.Internal);");
+            sb.AppendLine("        try");
             sb.AppendLine("        {");
-            sb.AppendLine("            throw new global::HotChocolate.GraphQLException(string.Join(\"; \", global::System.Linq.Enumerable.Select(validation.Errors, static failure => failure.PropertyName + \": \" + failure.ErrorMessage))); ");
+            sb.AppendLine("            var validation = await validator.ValidateAsync(input, ct);");
+            sb.AppendLine("            if (!validation.IsValid)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                throw new global::HotChocolate.GraphQLException(string.Join(\"; \", global::System.Linq.Enumerable.Select(validation.Errors, static failure => failure.PropertyName + \": \" + failure.ErrorMessage))); ");
+            sb.AppendLine("            }");
+            sb.AppendLine("            return await resolver.ResolveAsync(input, ct);");
             sb.AppendLine("        }");
-            sb.AppendLine("        return await resolver.ResolveAsync(input, ct);");
+            sb.AppendLine("        catch (global::System.Exception ex)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            activity?.AddException(ex);");
+            sb.AppendLine("            activity?.SetStatus(global::System.Diagnostics.ActivityStatusCode.Error, \"GraphQL operation failed\");");
+            sb.AppendLine("            activity?.SetTag(\"error.type\", ex.GetType().FullName);");
+            sb.AppendLine("            throw;");
+            sb.AppendLine("        }");
             sb.AppendLine("    }");
             sb.AppendLine();
         }

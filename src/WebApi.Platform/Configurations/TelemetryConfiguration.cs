@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -42,7 +44,9 @@ public static class TelemetryConfiguration
                     .SetResourceBuilder(resourceBuilder)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
+                    .AddSource("GoldenPath.GraphQL")
                     .AddNpgsql()
+                    .AddProcessor(new GraphQlOperationNameProcessor())
                     .AddOtlpExporter(o => o.Endpoint = endpoint))
                 .WithMetrics(metrics => metrics
                     .SetResourceBuilder(resourceBuilder)
@@ -59,6 +63,17 @@ public static class TelemetryConfiguration
                 logging.ParseStateValues = true;
                 logging.AddOtlpExporter(o => o.Endpoint = endpoint);
             });
+        }
+    }
+
+    private sealed class GraphQlOperationNameProcessor : BaseProcessor<Activity>
+    {
+        public override void OnEnd(Activity activity)
+        {
+            if (activity.Kind == ActivityKind.Server && activity.GetTagItem("graphql.operation.name") is string operationName)
+            {
+                activity.DisplayName = operationName;
+            }
         }
     }
 }
