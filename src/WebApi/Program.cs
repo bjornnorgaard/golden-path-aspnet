@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApi.Platform;
 using WebApi.Database;
 using WebApi.Todos;
+using WebApi.Todos.GraphQl;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -16,5 +17,6 @@ builder.Services.AddDbContext<TodoContext>((_, opts) => opts.UseNpgsql(cs));
 var app = builder.Build();
 app.UsePlatform();
 app.MapGeneratedTransportLayers();
+app.MapGeneratedGraphQlPlayground();
 
 app.Run();

@@ -8,6 +8,14 @@ namespace WebApi.Tests;
 public sealed class GraphQlTests : TestBase
 {
     [Test]
+    public async Task Playground_is_available_in_development()
+    {
+        var response = await Client.GetAsync("/graphql/playground/");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+    }
+
+    [Test]
     public async Task Schema_exposes_every_operation_from_the_openapi_contract()
     {
         var result = await ExecuteAsync("{ __schema { queryType { fields { name } } mutationType { fields { name } } } }");
