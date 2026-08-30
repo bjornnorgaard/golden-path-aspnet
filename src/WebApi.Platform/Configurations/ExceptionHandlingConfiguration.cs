@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace WebApi.Platform.Configurations;
 
@@ -13,7 +14,7 @@ public static class ExceptionHandlingConfiguration
         public void AddPlatformExceptionHandling()
         {
             builder.Services.AddProblemDetails();
-            builder.Services.AddExceptionHandler<PlatformExceptionHandler>();
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         }
     }
 
@@ -25,12 +26,20 @@ public static class ExceptionHandlingConfiguration
         }
     }
 
-    private sealed class PlatformExceptionHandler : IExceptionHandler
+    public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
     {
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception ex, CancellationToken ct)
         {
-            Activity.Current?.AddException(ex);
-            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            logger.LogError(
+                ex,
+                "Unhandled exception while handling HTTP {RequestMethod} {RequestPath}",
+                httpContext.Request.Method,
+                httpContext.Request.Path);
+
+            var activity = Activity.Current;
+            activity?.AddException(ex);
+            activity?.SetStatus(ActivityStatusCode.Error, "Unhandled exception");
+            activity?.SetTag("error.type", ex.GetType().FullName);
 
             var problem = Results.Problem(
                 statusCode: StatusCodes.Status500InternalServerError,
