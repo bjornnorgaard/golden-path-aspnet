@@ -6,7 +6,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <HotChocolateImplicitUsings>disable</HotChocolateImplicitUsings>
         <InvariantGlobalization>true</InvariantGlobalization>
-        <PublishAot>true</PublishAot>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <WarningsAsErrors>true</WarningsAsErrors>
     </PropertyGroup>

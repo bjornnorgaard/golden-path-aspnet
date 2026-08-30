@@ -39,25 +39,8 @@ dotnet tool run dotnet-ef -- dbcontext info
 dotnet tool run dotnet-ef -- dbcontext list
 ```
 
-### Migration bundle (AOT / production)
-
-```bash
-cd src/WebApi
-dotnet restore -r linux-x64
-dotnet tool run dotnet-ef -- migrations bundle \
-  --self-contained \
-  --target-runtime linux-x64 \
-  --configuration Release \
-  --project ../WebApi.csproj \
-  --output ./efbundle
-```
-
-Use **`--configuration Release`**, not **`-c Release`**. For local testing, swap
-`linux-x64` for your RID (e.g. `osx-arm64`).
-
-```bash
-./efbundle --connection "Host=...;Database=...;Username=...;Password=..."
-```
+Migrations are applied automatically when the application starts. The database
+must be reachable with the configured `ConnectionStrings__DefaultConnection`.
 
 ---
 
@@ -81,11 +64,3 @@ dotnet tool run dotnet-ef -- migrations list --project ../WebApi.csproj --startu
 dotnet tool run dotnet-ef -- database update --project ../WebApi.csproj --startup-project ../WebApi.csproj
 dotnet tool run dotnet-ef -- migrations script --project ../WebApi.csproj --startup-project ../WebApi.csproj
 ```
-
-For **bundle**, run from **`src/WebApi`** (see above) so restore and output
-paths stay correct.
-
----
-
-The Docker image builds the bundle and runs it in **`WebApi/entrypoint.sh`**
-before starting the AOT app.
