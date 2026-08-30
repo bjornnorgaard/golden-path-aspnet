@@ -13,6 +13,7 @@ internal sealed class UpdateTodoResolver(UpdateTodoHandler handler) : IUpdateTod
         {
             throw new HotChocolate.GraphQLException("Todo was not found.");
         }
+        
         return new UpdateTodoResponse
         {
             Id = todo.Id.Value,

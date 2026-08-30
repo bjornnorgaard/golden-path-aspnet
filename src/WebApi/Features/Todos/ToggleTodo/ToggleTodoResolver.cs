@@ -13,6 +13,7 @@ internal sealed class ToggleTodoResolver(ToggleTodoHandler handler) : IToggleTod
         {
             throw new HotChocolate.GraphQLException("Todo was not found.");
         }
+        
         return new ToggleTodoResponse
         {
             Id = todo.Id.Value,
