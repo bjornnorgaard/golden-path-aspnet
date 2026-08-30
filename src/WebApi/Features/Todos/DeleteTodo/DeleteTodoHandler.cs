@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using WebApi.Platform.Annotations;
 using WebApi.Database;
-using TodoId = WebApi.Database.Models.TodoId;
+using WebApi.Database.Models;
+using WebApi.Platform.Annotations;
 
 namespace WebApi.Features.Todos.DeleteTodo;
 
@@ -13,6 +13,7 @@ internal sealed class DeleteTodoHandler(TodoContext context)
         var deleted = await context.Todos
             .Where(todo => todo.Id == todoId)
             .ExecuteDeleteAsync(ct);
+
         return deleted > 0;
     }
 }

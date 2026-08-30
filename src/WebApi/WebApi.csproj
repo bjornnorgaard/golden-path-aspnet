@@ -4,6 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <HotChocolateImplicitUsings>disable</HotChocolateImplicitUsings>
         <InvariantGlobalization>true</InvariantGlobalization>
         <PublishAot>true</PublishAot>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -12,6 +13,7 @@
 
     <ItemGroup>
         <PackageReference Include="FluentValidation" Version="12.1.1"/>
+        <PackageReference Include="HotChocolate.AspNetCore" Version="16.6.2"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -28,7 +30,7 @@
     <ItemGroup>
         <!-- Needed to source-generated types for configuration -->
         <AdditionalFiles Include="appsettings.json"/>
-        <AdditionalFiles Include="OpenApi/todos.openapi.yaml" />
+        <AdditionalFiles Include="Contracts/**/*.*" />
     </ItemGroup>
 
 </Project>

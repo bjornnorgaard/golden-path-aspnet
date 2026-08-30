@@ -1,4 +1,5 @@
 using Generators.OpenApi;
+using Generators.GraphQl;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -70,6 +71,47 @@ paths:
         '200': { description: ok }
 """, "namespace Example;");
         await Assert.That(result.Diagnostics).Contains("GP2001");
+    }
+
+    [Test]
+    public async Task Generates_graphql_queries_mutations_and_handler_dispatch()
+    {
+        const string spec = """
+type Query {
+  getTodoList(input: GetTodoListRequest!): GetTodoListResponse!
+}
+
+type Mutation {
+  createTodo(input: CreateTodoRequest!): CreateTodoResponse!
+}
+""";
+        var compilation = CSharpCompilation.Create("Example.Api", [CSharpSyntaxTree.ParseText("namespace Example;")], [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)], new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        GeneratorDriver driver = CSharpGeneratorDriver.Create([new GraphQlEndpointGenerator().AsSourceGenerator()], [new TextFile("todos.graphql", spec)]);
+        var generated = string.Join("\n", driver.RunGenerators(compilation).GetRunResult().GeneratedTrees.Select(tree => tree.GetText().ToString()));
+
+        await Assert.That(generated).Contains("AddGeneratedGraphQlEndpoints");
+        await Assert.That(generated).Contains("namespace Example.Api.Todos.GraphQl");
+        await Assert.That(generated).Contains("endpoints.MapGraphQL(\"/graphql\")");
+        await Assert.That(generated).Contains("GeneratedTodosGraphQlQuery");
+        await Assert.That(generated).Contains("GeneratedTodosGraphQlMutation");
+        await Assert.That(generated).Contains("public interface IGetTodoListResolver");
+        await Assert.That(generated).Contains("public interface ICreateTodoResolver");
+        await Assert.That(generated).Contains("IGetTodoListResolver resolver");
+    }
+
+    [Test]
+    public async Task Reports_missing_graphql_resolver_implementation()
+    {
+        const string spec = """
+type Query {
+  getTodoList(input: GetTodoListRequest!): GetTodoListResponse!
+}
+""";
+        var compilation = CSharpCompilation.Create("WebApi", [CSharpSyntaxTree.ParseText("namespace Example;")], [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)], new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        GeneratorDriver driver = CSharpGeneratorDriver.Create([new GraphQlEndpointGenerator().AsSourceGenerator()], [new TextFile("todos.graphql", spec)]);
+        var diagnostics = string.Join("\n", driver.RunGenerators(compilation).GetRunResult().Diagnostics.Select(diagnostic => diagnostic.Id));
+
+        await Assert.That(diagnostics).Contains("GP3000");
     }
 
     private static (string Generated, string Diagnostics) Run(string spec, string source)

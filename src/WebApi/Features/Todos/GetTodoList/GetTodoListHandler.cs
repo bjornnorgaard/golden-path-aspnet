@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using WebApi.Platform.Annotations;
 using WebApi.Database;
 using WebApi.Configuration;
+using WebApi.Platform.Annotations;
 using WebApi.Todos.Contracts;
 
 namespace WebApi.Features.Todos.GetTodoList;

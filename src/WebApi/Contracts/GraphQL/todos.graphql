@@ -1,0 +1,86 @@
+"""The GraphQL contract mirrors the operations in ../OpenApi/todos.openapi.yaml."""
+scalar DateTime
+
+type Query {
+  getTodoById(input: GetTodoByIdRequest!): GetTodoByIdResponse!
+  getTodoList(input: GetTodoListRequest!): GetTodoListResponse!
+}
+
+type Mutation {
+  createTodo(input: CreateTodoRequest!): CreateTodoResponse!
+  updateTodo(input: UpdateTodoRequest!): UpdateTodoResponse!
+  toggleTodo(input: ToggleTodoRequest!): ToggleTodoResponse!
+  deleteTodo(input: DeleteTodoRequest!): DeleteTodoResponse!
+}
+
+input GetTodoByIdRequest {
+  id: String!
+}
+
+input DeleteTodoRequest {
+  id: String!
+}
+
+input CreateTodoRequest {
+  title: String!
+  dueBy: DateTime
+}
+
+input UpdateTodoRequest {
+  id: String!
+  title: String!
+  dueBy: DateTime
+  isComplete: Boolean!
+}
+
+input ToggleTodoRequest {
+  id: String!
+}
+
+input GetTodoListRequest {
+  page: Int
+  pageSize: Int
+}
+
+type CreateTodoResponse {
+  id: String!
+  title: String!
+  dueBy: DateTime
+  isComplete: Boolean!
+}
+
+type GetTodoByIdResponse {
+  id: String!
+  title: String!
+  dueBy: DateTime
+  isComplete: Boolean!
+}
+
+type GetTodoListResponse {
+  todos: [GetTodoListItem!]!
+}
+
+type GetTodoListItem {
+  id: String!
+  title: String!
+  dueBy: DateTime
+  isComplete: Boolean!
+}
+
+type UpdateTodoResponse {
+  id: String!
+  title: String!
+  dueBy: DateTime
+  isComplete: Boolean!
+}
+
+type ToggleTodoResponse {
+  id: String!
+  title: String!
+  dueBy: DateTime
+  isComplete: Boolean!
+}
+
+type DeleteTodoResponse {
+  id: String!
+}
