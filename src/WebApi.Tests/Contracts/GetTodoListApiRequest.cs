@@ -2,6 +2,6 @@ namespace WebApi.Tests.Contracts;
 
 public sealed class GetTodoListApiRequest
 {
-    public int? Page { get; init; }
-    public int? PageSize { get; init; }
+    public int? Limit { get; init; }
+    public int? Offset { get; init; }
 }

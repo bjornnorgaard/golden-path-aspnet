@@ -47,6 +47,12 @@ Run `dotnet format` only when intentionally applying repository-wide formatting;
 - Use focused unit tests only for isolated logic that is genuinely simpler and more valuable to test directly. Do not create tests that mock many dependencies or require intricate setup; cover that behavior through the black-box fixture instead.
 - Verify the affected project at minimum; run the solution test suite for changes to shared infrastructure, generators, database behavior, or public API contracts. When changing a source generator, build both it and its consumer projects.
 
+## Runtime diagnostics
+
+- For runtime failures, inspect telemetry before changing code. The Compose environment exports application logs, traces, and spans to the Aspire Dashboard at `http://localhost:18888`.
+- Use the Aspire CLI to query the standalone dashboard, for example `aspire otel traces --dashboard-url http://localhost:18888 --has-error` and `aspire otel logs --dashboard-url http://localhost:18888 --trace-id <trace-id>`. A trace ID returned in a problem response can therefore be used to retrieve the corresponding exception details.
+- Use `aspire logs <resource>` when the application is managed by an Aspire AppHost; otherwise use the `aspire otel` commands above for this repository's Compose-based dashboard.
+
 ## Change hygiene
 
 - Keep changes scoped to the requested behavior.

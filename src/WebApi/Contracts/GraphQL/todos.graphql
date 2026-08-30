@@ -38,8 +38,8 @@ input ToggleTodoRequest {
 }
 
 input GetTodoListRequest {
-  page: Int
-  pageSize: Int
+  limit: Int
+  offset: Int
 }
 
 type CreateTodoResponse {

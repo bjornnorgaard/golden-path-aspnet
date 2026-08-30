@@ -9,16 +9,16 @@ namespace WebApi.Features.Todos.GetTodoList;
 [Service(ServiceLifetime.Transient)]
 internal sealed class GetTodoListHandler(TodoContext context, PagingOptions paging)
 {
-    public Task<GetTodoListItem[]> HandleAsync(int? page, int? pageSize, CancellationToken ct)
+    public Task<GetTodoListItem[]> HandleAsync(int? limit, int? offset, CancellationToken ct)
     {
-        var effectivePage = Math.Max(page ?? 1, 1);
-        var effectivePageSize = Math.Min(pageSize ?? paging.DefaultPageSize, paging.MaxPageSize);
+        var effectiveLimit = Math.Min(limit ?? paging.DefaultPageSize, paging.MaxPageSize);
+        var effectiveOffset = offset ?? 0;
 
         return context.Todos
             .AsNoTracking()
             .OrderBy(todo => todo.Id)
-            .Skip((effectivePage - 1) * effectivePageSize)
-            .Take(effectivePageSize)
+            .Skip(effectiveOffset)
+            .Take(effectiveLimit)
             .Select(todo => new GetTodoListItem
             {
                 Id = todo.Id.Value,

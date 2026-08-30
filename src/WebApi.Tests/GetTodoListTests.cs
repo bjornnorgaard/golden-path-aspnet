@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi.Database;
 using WebApi.Database.Models;
@@ -32,11 +33,11 @@ public class GetTodoListTests : TestBase
             await db.SaveChangesAsync();
         }
 
-        // Act: page 2 with size 5 => items 6-10 in our title ordering
+        // Act: skip the first five todos and return the next five
         var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, new GetTodoListApiRequest
         {
-            Page = 2,
-            PageSize = 5
+            Limit = 5,
+            Offset = 5
         });
 
         // Assert
@@ -48,7 +49,7 @@ public class GetTodoListTests : TestBase
     }
 
     [Test]
-    public async Task GetTodoList_DefaultPaging_Success()
+    public async Task GetTodoList_NullPaging_UsesDefaults()
     {
         // Arrange
         await using (var scope = Factory.Services.CreateAsyncScope())
@@ -64,7 +65,9 @@ public class GetTodoListTests : TestBase
         }
 
         // Act
-        var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, new GetTodoListApiRequest());
+        var response = await Client.PostAsync(
+            TestRoutes.Todos.GetList,
+            new StringContent("""{"limit":null,"offset":null}""", Encoding.UTF8, "application/json"));
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -74,7 +77,21 @@ public class GetTodoListTests : TestBase
     }
 
     [Test]
-    public async Task GetTodoList_PageSizeAboveConfiguredMaximum_IsCapped()
+    public async Task GetTodoList_ScalarDefaultPayload_ReturnsAJsonResponse()
+    {
+        // Scalar submits the defaults advertised by the OpenAPI document as JSON.
+        var response = await Client.PostAsync(
+            TestRoutes.Todos.GetList,
+            new StringContent("""{"limit":20,"offset":0}""", Encoding.UTF8, "application/json"));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(response.Content.Headers.ContentType?.MediaType).IsEqualTo("application/json");
+        var body = await response.Content.ReadFromJsonAsync<GetTodoListResponse>();
+        await Assert.That(body).IsNotNull();
+    }
+
+    [Test]
+    public async Task GetTodoList_LimitAboveConfiguredMaximum_IsCapped()
     {
         // Arrange
         await using (var scope = Factory.Services.CreateAsyncScope())
@@ -92,8 +109,8 @@ public class GetTodoListTests : TestBase
         // Act
         var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, new GetTodoListApiRequest
         {
-            Page = 1,
-            PageSize = 200
+            Limit = 200,
+            Offset = 0
         });
 
         // Assert
@@ -104,10 +121,10 @@ public class GetTodoListTests : TestBase
     }
 
     [Test]
-    public async Task GetTodoList_InvalidPage_ReturnsValidationProblem()
+    public async Task GetTodoList_InvalidOffset_ReturnsValidationProblem()
     {
         // Arrange
-        var req = new GetTodoListApiRequest { Page = 0, PageSize = 10 };
+        var req = new GetTodoListApiRequest { Limit = 10, Offset = -1 };
 
         // Act
         var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, req);
@@ -115,15 +132,15 @@ public class GetTodoListTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("Page");
-        await Assert.That(body).Contains("greater than or equal to '1'");
+        await Assert.That(body).Contains("Offset");
+        await Assert.That(body).Contains("greater than or equal to '0'");
     }
 
     [Test]
-    public async Task GetTodoList_InvalidPageSize_ReturnsValidationProblem()
+    public async Task GetTodoList_InvalidLimit_ReturnsValidationProblem()
     {
         // Arrange
-        var req = new GetTodoListApiRequest { Page = 1, PageSize = 0 };
+        var req = new GetTodoListApiRequest { Limit = 0, Offset = 0 };
 
         // Act
         var response = await Client.PostAsJsonAsync(TestRoutes.Todos.GetList, req);
@@ -131,7 +148,7 @@ public class GetTodoListTests : TestBase
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("PageSize");
+        await Assert.That(body).Contains("Limit");
         await Assert.That(body).Contains("greater than or equal to '1'");
     }
 }
