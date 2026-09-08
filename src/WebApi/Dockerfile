@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+﻿FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS base
 ARG APP_UID=1000
 WORKDIR /app
 EXPOSE 8080
@@ -22,10 +22,7 @@ RUN dotnet publish "./WebApi.csproj" -c $BUILD_CONFIGURATION -r linux-x64 -o /ap
 
 FROM base AS final
 ARG APP_UID=1000
-USER root
 WORKDIR /app
-COPY --from=publish /app/publish/ ./
-RUN chmod +x ./WebApi \
-    && chown -R $APP_UID:$APP_UID /app
+COPY --from=publish --chown=$APP_UID:$APP_UID --chmod=755 /app/publish/ ./
 USER $APP_UID
 ENTRYPOINT ["/app/WebApi"]
