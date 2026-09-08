@@ -1,4 +1,3 @@
-using Hangfire;
 using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
@@ -8,7 +7,7 @@ using TodoId = WebApi.Database.Models.TodoId;
 namespace WebApi.Features.Todos.CreateTodo;
 
 [Service(ServiceLifetime.Transient)]
-internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClient backgroundJobClient)
+internal sealed class CreateTodoHandler(TodoContext context)
 {
     public async Task<Todo> HandleAsync(CreateTodoRequest request, CancellationToken ct)
     {
@@ -22,9 +21,6 @@ internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClien
 
         await context.Todos.AddAsync(todo, ct);
         await context.SaveChangesAsync(ct);
-
-        backgroundJobClient.Enqueue<TodoCreatedNotificationHandler>(
-            handler => handler.HandleAsync(todo.Id.Value, todo.Title, CancellationToken.None));
 
         return todo;
     }
