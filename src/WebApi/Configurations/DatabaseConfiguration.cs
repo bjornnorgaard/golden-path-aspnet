@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WebApi.Database;
 
-namespace WebApi.Configurations.Configurations;
+namespace WebApi.Configurations;
 
 public static class DatabaseConfiguration
 {

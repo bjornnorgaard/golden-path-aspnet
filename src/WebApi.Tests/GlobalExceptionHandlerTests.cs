@@ -3,7 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using WebApi.Configurations.Configurations;
+using WebApi.Configurations;
 
 namespace WebApi.Tests;
 

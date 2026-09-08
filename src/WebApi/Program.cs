@@ -1,4 +1,4 @@
-using WebApi.Configurations.Configurations;
+using WebApi.Configurations;
 using WebApi.Todos;
 using WebApi.Todos.GraphQl;
 
