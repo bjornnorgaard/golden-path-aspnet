@@ -12,7 +12,7 @@ namespace Generators;
 [Generator]
 public class ServiceRegistrationGenerator : IIncrementalGenerator
 {
-    private const string AttrFqn = "WebApi.Platform.Annotations.ServiceAttribute";
+    private const string AttrFqn = "WebApi.Annotations.ServiceAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

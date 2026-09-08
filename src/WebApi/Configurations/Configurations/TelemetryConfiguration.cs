@@ -7,7 +7,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using WebApi.Telemetry;
 
-namespace WebApi.Platform.Configurations;
+namespace WebApi.Configurations.Configurations;
 
 public static class TelemetryConfiguration
 {

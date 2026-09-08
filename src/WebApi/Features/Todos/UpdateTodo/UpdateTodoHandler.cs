@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
-using WebApi.Platform.Annotations;
 using WebApi.Todos.Contracts;
 using TodoId = WebApi.Database.Models.TodoId;
 

@@ -1,4 +1,4 @@
-namespace WebApi.Platform.Annotations;
+namespace WebApi.Annotations;
 
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class ServiceAttribute(ServiceLifetime lifetime, bool asSelf = false) : Attribute

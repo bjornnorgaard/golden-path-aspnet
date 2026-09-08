@@ -1,4 +1,4 @@
-using WebApi.Platform.Annotations;
+using WebApi.Annotations;
 using WebApi.Database.Models;
 
 // ReSharper disable UnusedMember.Local

@@ -9,7 +9,7 @@ namespace Generators;
 [Generator]
 public class StrongIdGenerator : IIncrementalGenerator
 {
-    private const string AttrFqn = "WebApi.Platform.Annotations.StrongIdAttribute";
+    private const string AttrFqn = "WebApi.Annotations.StrongIdAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

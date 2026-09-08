@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 
-namespace WebApi.Platform.Configurations;
+namespace WebApi.Configurations.Configurations;
 
 public static class ExceptionHandlingConfiguration
 {

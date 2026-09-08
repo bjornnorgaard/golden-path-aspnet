@@ -1,4 +1,4 @@
-namespace WebApi.Platform.Annotations;
+namespace WebApi.Annotations;
 
 [AttributeUsage(AttributeTargets.Struct)]
 public sealed class StrongIdAttribute(Type? underlyingType = null) : Attribute

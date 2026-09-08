@@ -1,7 +1,7 @@
 using System.Reflection;
 using Scalar.AspNetCore;
 
-namespace WebApi.Platform.Configurations;
+namespace WebApi.Configurations.Configurations;
 
 /// <summary>
 /// Contract-first: OpenAPI documents under Contracts/OpenApi are embedded at build time and served

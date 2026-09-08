@@ -1,20 +1,20 @@
-using WebApi.Platform.Configurations;
+using WebApi.Configurations.Configurations;
 using WebApi.Todos;
 using WebApi.Todos.GraphQl;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 builder.AddPlatformExceptionHandling();
-builder.AddPlatformTelemetry();
 builder.AddWebApiGeneratedConfiguration();
-builder.RegisterGeneratedServices();
 builder.AddGeneratedTransportLayers();
+builder.RegisterGeneratedServices();
+builder.AddPlatformTelemetry();
 builder.AddDatabase();
 
 var app = builder.Build();
 app.UsePlatformExceptionHandling();
-app.MapPlatformOpenApi();
 app.MapGeneratedTransportLayers();
 app.MapGeneratedGraphQlPlayground();
+app.MapPlatformOpenApi();
 app.UseDatabase();
 
 app.Run();

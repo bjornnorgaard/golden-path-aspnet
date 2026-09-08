@@ -1,4 +1,4 @@
-namespace WebApi.Platform.Annotations;
+namespace WebApi.Annotations;
 
 [AttributeUsage(AttributeTargets.Field)]
 public sealed class TagKeyAttribute : Attribute
