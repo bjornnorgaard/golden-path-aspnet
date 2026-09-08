@@ -9,7 +9,7 @@ public static class HangfireConfiguration
     {
         public void AddPlatformHangfire()
         {
-            var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+            var cs = builder.Configuration.GetConnectionStrings().DefaultConnection;
 
             builder.Services.AddHangfire(config => config
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

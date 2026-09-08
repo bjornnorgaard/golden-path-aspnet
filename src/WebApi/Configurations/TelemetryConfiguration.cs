@@ -15,13 +15,13 @@ public static class TelemetryConfiguration
     {
         public void AddPlatformTelemetry()
         {
-            var collectorEndpoint = builder.Configuration["Telemetry:CollectorEndpoint"];
+            var collectorEndpoint = builder.Configuration.GetTelemetry().CollectorEndpoint;
             if (collectorEndpoint == null)
             {
                 throw new InvalidOperationException("Required configuration value is missing: Telemetry:CollectorEndpoint");
             }
 
-            var serviceName = builder.Configuration["Telemetry:ServiceName"];
+            var serviceName = builder.Configuration.GetTelemetry().ServiceName;
             if (serviceName == null)
             {
                 throw new InvalidOperationException("Required configuration value is missing: Telemetry:ServiceName");
