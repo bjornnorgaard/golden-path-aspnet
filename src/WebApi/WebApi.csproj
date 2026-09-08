@@ -11,22 +11,24 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentValidation" Version="12.1.1"/>
-        <PackageReference Include="HotChocolate.AspNetCore" Version="16.6.2"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11"/>
+        <PackageReference Include="FluentValidation" Version="12.1.1" />
+        <PackageReference Include="Hangfire.AspNetCore" Version="1.8.25" />
+        <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
+        <PackageReference Include="HotChocolate.AspNetCore" Version="16.6.2" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3"/>
-        <PackageReference Include="Npgsql.OpenTelemetry" Version="10.0.3"/>
-        <PackageReference Include="OpenTelemetry" Version="1.18.0"/>
-        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0"/>
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0"/>
-        <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0"/>
-        <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0"/>
-        <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0"/>
-        <PackageReference Include="Scalar.AspNetCore" Version="2.17.2"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+        <PackageReference Include="Npgsql.OpenTelemetry" Version="10.0.3" />
+        <PackageReference Include="OpenTelemetry" Version="1.18.0" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.17.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -35,7 +37,7 @@
 
     <ItemGroup>
         <!-- Needed to source-generated types for configuration -->
-        <AdditionalFiles Include="appsettings.json"/>
+        <AdditionalFiles Include="appsettings.json" />
         <AdditionalFiles Include="Contracts/**/*.*" />
     </ItemGroup>
 

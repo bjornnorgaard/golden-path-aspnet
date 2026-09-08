@@ -8,12 +8,14 @@ builder.AddWebApiGeneratedConfiguration();
 builder.AddGeneratedTransportLayers();
 builder.RegisterGeneratedServices();
 builder.AddPlatformTelemetry();
+builder.AddPlatformHangfire();
 builder.AddDatabase();
 
 var app = builder.Build();
 app.UsePlatformExceptionHandling();
 app.MapGeneratedTransportLayers();
 app.MapGeneratedGraphQlPlayground();
+app.UsePlatformHangfireDashboard();
 app.MapPlatformOpenApi();
 app.UseDatabase();
 
