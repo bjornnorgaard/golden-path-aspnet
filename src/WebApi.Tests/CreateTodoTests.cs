@@ -60,6 +60,6 @@ public class CreateTodoTests : TestBase
 
         var body = await response.Content.ReadAsStringAsync();
         await Assert.That(body).Contains("Title");
-        await Assert.That(body).Contains("at least 30");
+        await Assert.That(body).Contains("at least 3");
     }
 }

@@ -65,7 +65,7 @@ public sealed class GraphQlTests : TestBase
     {
         var result = await ExecuteAsync("""
             mutation {
-              createTodo(input: { title: "too short" }) {
+              createTodo(input: { title: "ab" }) {
                 id
               }
             }
