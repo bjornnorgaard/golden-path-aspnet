@@ -1,5 +1,4 @@
 using Hangfire;
-using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 
 namespace WebApi.Configurations;
