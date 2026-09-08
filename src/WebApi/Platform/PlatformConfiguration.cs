@@ -12,7 +12,6 @@ public static class PlatformConfiguration
         {
             builder.AddPlatformExceptionHandling();
             builder.AddPlatformTelemetry();
-            builder.AddPlatformOpenApi();
             builder.AddWebApiGeneratedConfiguration();
             builder.RegisterGeneratedServices();
             builder.AddGeneratedTransportLayers();

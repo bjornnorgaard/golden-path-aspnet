@@ -13,7 +13,6 @@
     <ItemGroup>
         <PackageReference Include="FluentValidation" Version="12.1.1"/>
         <PackageReference Include="HotChocolate.AspNetCore" Version="16.6.2"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -38,6 +37,11 @@
         <!-- Needed to source-generated types for configuration -->
         <AdditionalFiles Include="appsettings.json"/>
         <AdditionalFiles Include="Contracts/**/*.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The OpenAPI contracts are the source of truth; embed them so they can be served as-is at runtime -->
+        <EmbeddedResource Include="Contracts/OpenApi/**/*.openapi.yaml" LogicalName="%(Filename)%(Extension)" />
     </ItemGroup>
 
 </Project>
