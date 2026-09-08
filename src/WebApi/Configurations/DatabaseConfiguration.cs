@@ -9,7 +9,7 @@ public static class DatabaseConfiguration
     {
         public void AddDatabase()
         {
-            var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+            var cs = builder.Configuration.GetConnectionStrings().DefaultConnection;
             builder.Services.AddDbContext<TodoContext>((_, opts) => opts.UseNpgsql(cs));
         }
     }
