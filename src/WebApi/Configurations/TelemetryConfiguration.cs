@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Npgsql;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -44,7 +43,7 @@ public static class TelemetryConfiguration
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddHangfireInstrumentation()
-                    .AddNpgsql()
+                    //.AddNpgsql()
                     .AddOtlpExporter(o => o.Endpoint = endpoint))
                 .WithMetrics(metrics => metrics
                     .SetResourceBuilder(resourceBuilder)
