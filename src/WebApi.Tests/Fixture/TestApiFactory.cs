@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using TUnit.AspNetCore;
 
 namespace WebApi.Tests.Fixture;

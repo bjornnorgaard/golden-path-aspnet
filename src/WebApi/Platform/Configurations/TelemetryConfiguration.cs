@@ -1,14 +1,11 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Npgsql;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using WebApi.Telemetry;
 
 namespace WebApi.Platform.Configurations;
 
@@ -44,7 +41,7 @@ public static class TelemetryConfiguration
                     .SetResourceBuilder(resourceBuilder)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddSource("GoldenPath.GraphQL")
+                    .AddSource(TelemetryConfig.Source)
                     .AddNpgsql()
                     .AddProcessor(new GraphQlOperationNameProcessor())
                     .AddOtlpExporter(o => o.Endpoint = endpoint))

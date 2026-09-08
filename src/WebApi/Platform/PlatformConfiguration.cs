@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Builder;
 using WebApi.Platform.Configurations;
+using WebApi.Todos;
+using WebApi.Todos.GraphQl;
 
 namespace WebApi.Platform;
 
@@ -12,6 +13,9 @@ public static class PlatformConfiguration
             builder.AddPlatformExceptionHandling();
             builder.AddPlatformTelemetry();
             builder.AddPlatformOpenApi();
+            builder.AddWebApiGeneratedConfiguration();
+            builder.RegisterGeneratedServices();
+            builder.AddGeneratedTransportLayers();
         }
     }
 
@@ -21,6 +25,8 @@ public static class PlatformConfiguration
         {
             app.UsePlatformExceptionHandling();
             app.MapPlatformOpenApi();
+            app.MapGeneratedTransportLayers();
+            app.MapGeneratedGraphQlPlayground();
         }
     }
 }

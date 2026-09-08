@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace WebApi.Platform.Annotations;
 
 [AttributeUsage(AttributeTargets.Class)]

@@ -8,7 +8,6 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["WebApi/WebApi.csproj", "WebApi/"]
-COPY ["WebApi.Platform/WebApi.Platform.csproj", "WebApi.Platform/"]
 COPY ["Generators/Generators/Generators.csproj", "Generators/Generators/"]
 RUN dotnet restore "WebApi/WebApi.csproj"
 COPY . .
