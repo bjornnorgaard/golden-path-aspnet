@@ -20,7 +20,7 @@ and throughput.
 - `results/` — Markdown and JSON summaries written by each run (git-ignored);
   see below.
 
-Each script ramps from 0 to 75 virtual users over ~40 seconds total (150 VUs
+Each script ramps from 0 to 10 virtual users over ~30 seconds total (20 VUs
 combined in `all.js`, since REST and GraphQL scenarios run concurrently),
 which is enough to stress the app meaningfully while still finishing in under
 a minute.
