@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using TodoId = WebApi.Database.Models.TodoId;
 
@@ -19,10 +20,18 @@ internal sealed class UpdateTodoHandler(TodoContext context)
             return null;
         }
 
+        var wasComplete = todo.IsComplete;
+
         todo.Title = request.Title;
         todo.DueBy = request.DueBy?.UtcDateTime;
         todo.IsComplete = request.IsComplete;
         await context.SaveChangesAsync(ct);
+
+        if (todo.IsComplete && !wasComplete)
+        {
+            TelemetryConfig.RecordTodoCompleted();
+        }
+
         return todo;
     }
 }

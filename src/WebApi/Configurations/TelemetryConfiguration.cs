@@ -39,17 +39,20 @@ public static class TelemetryConfiguration
                     .AddService(serviceName: serviceName))
                 .WithTracing(tracing => tracing
                     .SetResourceBuilder(resourceBuilder)
+                    .AddSource(TelemetryConfig.ActivitySource.Name)
+                    .AddProcessor(new GraphQlOperationNameProcessor())
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddSource(TelemetryConfig.Source)
+                    .AddHangfireInstrumentation()
                     .AddNpgsql()
-                    .AddProcessor(new GraphQlOperationNameProcessor())
                     .AddOtlpExporter(o => o.Endpoint = endpoint))
                 .WithMetrics(metrics => metrics
                     .SetResourceBuilder(resourceBuilder)
+                    .AddMeter(TelemetryConfig.Meter.Name)
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
+                    .AddHangfireInstrumentation()
                     .AddOtlpExporter(o => o.Endpoint = endpoint));
 
             builder.Logging.AddOpenTelemetry(logging =>

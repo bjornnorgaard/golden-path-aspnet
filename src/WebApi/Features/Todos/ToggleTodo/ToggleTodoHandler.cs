@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Telemetry;
 using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos.ToggleTodo;
@@ -20,6 +21,12 @@ internal sealed class ToggleTodoHandler(TodoContext context)
 
         todo.IsComplete = !todo.IsComplete;
         await context.SaveChangesAsync(ct);
+
+        if (todo.IsComplete)
+        {
+            TelemetryConfig.RecordTodoCompleted();
+        }
+
         return todo;
     }
 }

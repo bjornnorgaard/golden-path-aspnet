@@ -1,6 +1,7 @@
 using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using TodoId = WebApi.Database.Models.TodoId;
 
@@ -21,6 +22,8 @@ internal sealed class CreateTodoHandler(TodoContext context)
 
         await context.Todos.AddAsync(todo, ct);
         await context.SaveChangesAsync(ct);
+
+        TelemetryConfig.RecordTodoCreated();
 
         return todo;
     }
