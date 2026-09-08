@@ -50,8 +50,11 @@ Run `dotnet format` only when intentionally applying repository-wide formatting;
 ## Runtime diagnostics
 
 - For runtime failures, inspect telemetry before changing code. The Compose environment exports application logs, traces, and spans to the Aspire Dashboard at `http://localhost:18888`.
-- Use the Aspire CLI to query the standalone dashboard, for example `aspire otel traces --dashboard-url http://localhost:18888 --has-error` and `aspire otel logs --dashboard-url http://localhost:18888 --trace-id <trace-id>`. A trace ID returned in a problem response can therefore be used to retrieve the corresponding exception details.
+- The Aspire CLI (`aspire`) reads this telemetry directly from the terminal, without opening the dashboard UI — [install it](https://aka.ms/aspire/install-cli) if the `aspire` command is not available.
+- Use `aspire otel logs --dashboard-url http://localhost:18888`, `aspire otel traces --dashboard-url http://localhost:18888`, and `aspire otel spans --dashboard-url http://localhost:18888` to view structured logs, traces, and spans respectively. Add `--non-interactive` when running from an agent/script context to avoid interactive prompts.
+- Filter with options such as `--has-error` (traces/spans with errors) and `--trace-id <trace-id>` (logs/spans for a specific trace) to narrow results, e.g. `aspire otel traces --dashboard-url http://localhost:18888 --has-error --non-interactive` and `aspire otel logs --dashboard-url http://localhost:18888 --trace-id <trace-id> --non-interactive`. A trace ID returned in a problem response can therefore be used to retrieve the corresponding exception details.
 - Use `aspire logs <resource>` when the application is managed by an Aspire AppHost; otherwise use the `aspire otel` commands above for this repository's Compose-based dashboard.
+- Use `aspire export --dashboard-url http://localhost:18888` to save a zip snapshot of the current telemetry for offline inspection or sharing.
 
 ## Change hygiene
 
