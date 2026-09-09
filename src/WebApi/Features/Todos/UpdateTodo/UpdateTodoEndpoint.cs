@@ -24,7 +24,7 @@ internal sealed class UpdateTodoEndpoint(UpdateTodoHandler handler) : IUpdateTod
         {
             Id = todoId,
             Title = request.Title,
-            DueBy = request.DueBy.ToUtcDueDate(),
+            DueBy = request.DueBy.ToUtcDueBy(),
             IsComplete = request.IsComplete
         }, ct);
         if (result is null)

@@ -21,7 +21,7 @@ internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClien
     {
         public TodoId Id { get; set; }
     }
-    
+
     public async Task<Result> HandleAsync(Command request, CancellationToken ct)
     {
         var todo = new Todo
@@ -41,7 +41,9 @@ internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClien
         {
             // Delayed job: scheduled to fire exactly when the todo becomes due. Hangfire clamps
             // past-due schedules to run immediately, so no extra guard is needed here.
-            jobs.Schedule<SendTodoDueReminderJob>(j => j.InvokeAsync(todo.Id, CancellationToken.None), new DateTimeOffset(dueBy, TimeSpan.Zero));
+            jobs.Schedule<SendTodoDueReminderHandler>(
+                j => j.HandleAsync(new SendTodoDueReminderHandler.Command { TodoId = todo.Id }, CancellationToken.None),
+                new DateTimeOffset(dueBy, TimeSpan.Zero));
         }
 
         return new Result { Id = todo.Id };

@@ -41,7 +41,7 @@ internal sealed class ToggleTodoHandler(TodoContext context, IBackgroundJobClien
             TelemetryConfig.RecordTodoCompleted();
 
             // Fire-and-forget: the caller doesn't need to wait for this to run.
-            jobs.Enqueue<SendTodoCompletedNotificationJob>(j => j.InvokeAsync(todo.Id, CancellationToken.None));
+            jobs.Enqueue<SendTodoCompletedNotificationHandler>(j => j.HandleAsync(new SendTodoCompletedNotificationHandler.Command { TodoId = todo.Id }, CancellationToken.None));
         }
 
         return new Result

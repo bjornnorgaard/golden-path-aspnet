@@ -9,8 +9,8 @@ internal sealed class CreateTodoResolver(CreateTodoHandler handler) : ICreateTod
 {
     public async Task<CreateTodoResponse> ResolveAsync(CreateTodoRequest input, CancellationToken ct)
     {
-        // Normalize to a UTC-kinded date once for both the command and the response.
-        var dueBy = input.DueBy.ToUtcDueDate();
+        // Normalize to a UTC-kinded value once for both the command and the response.
+        var dueBy = input.DueBy.ToUtcDueBy();
 
         var result = await handler.HandleAsync(new CreateTodoHandler.Command
         {

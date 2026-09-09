@@ -17,7 +17,7 @@ internal sealed class UpdateTodoResolver(UpdateTodoHandler handler) : IUpdateTod
         {
             Id = todoId,
             Title = input.Title,
-            DueBy = input.DueBy.ToUtcDueDate(),
+            DueBy = input.DueBy.ToUtcDueBy(),
             IsComplete = input.IsComplete
         }, ct);
         if (result is null)

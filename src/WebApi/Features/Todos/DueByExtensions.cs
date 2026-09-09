@@ -7,10 +7,10 @@ namespace WebApi.Features.Todos;
 internal static class DueByExtensions
 {
     /// <summary>
-    /// Converts an offset-aware due-date into a UTC-kinded, date-only value. PostgreSQL's
-    /// timestamptz column rejects <see cref="DateTime"/> values with <see cref="DateTimeKind.Unspecified"/>,
-    /// which is what <see cref="DateTimeOffset.Date"/> alone would produce, so the value is
-    /// converted to UTC before truncating to a date.
+    /// Converts an offset-aware due-date into the UTC-kinded value the domain stores. The time of
+    /// day is preserved, since the due-date drives the delayed reminder job that fires exactly when
+    /// a todo becomes due. The kind matters: PostgreSQL's timestamptz column rejects
+    /// <see cref="DateTime"/> values with <see cref="DateTimeKind.Unspecified"/>.
     /// </summary>
-    public static DateTime? ToUtcDueDate(this DateTimeOffset? dueBy) => dueBy?.UtcDateTime.Date;
+    public static DateTime? ToUtcDueBy(this DateTimeOffset? dueBy) => dueBy?.UtcDateTime;
 }

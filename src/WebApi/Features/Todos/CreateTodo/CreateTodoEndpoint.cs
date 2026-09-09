@@ -12,8 +12,8 @@ internal sealed class CreateTodoEndpoint(CreateTodoHandler handler) : ICreateTod
         CreateTodoRequest request,
         CancellationToken ct)
     {
-        // Normalize to a UTC-kinded date once for both the command and the response.
-        var dueBy = request.DueBy.ToUtcDueDate();
+        // Normalize to a UTC-kinded value once for both the command and the response.
+        var dueBy = request.DueBy.ToUtcDueBy();
 
         var result = await handler.HandleAsync(new CreateTodoHandler.Command
         {
