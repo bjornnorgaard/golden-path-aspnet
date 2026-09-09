@@ -7,6 +7,7 @@
     <WarningsAsErrors>true</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Kept in lockstep with Generators.csproj's pinned version; see the comment there. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <PackageReference Include="TUnit" Version="1.66.27" />
   </ItemGroup>

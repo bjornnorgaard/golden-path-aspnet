@@ -16,6 +16,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Pinned below 5.x: that version's analyzer host is incompatible with the .NET 10 SDK's bundled
+             compiler, which silently fails to load this generator and drops all generated types. Re-test
+             before bumping. -->
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
