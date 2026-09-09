@@ -7,14 +7,18 @@ internal sealed class CreateTodoResolver(CreateTodoHandler handler) : ICreateTod
 {
     public async Task<CreateTodoResponse> ResolveAsync(CreateTodoRequest input, CancellationToken ct)
     {
-        var todo = await handler.HandleAsync(input, ct);
+        var result = await handler.HandleAsync(new CreateTodoHandler.Command
+        {
+            DueBy = input.DueBy?.Date,
+            Title = input.Title
+        }, ct);
 
         return new CreateTodoResponse
         {
-            Id = todo.Id,
-            Title = todo.Title,
-            DueBy = todo.DueBy,
-            IsComplete = todo.IsComplete
+            Id = result.Id,
+            Title = input.Title,
+            DueBy = input.DueBy?.Date,
+            IsComplete = false
         };
     }
 }

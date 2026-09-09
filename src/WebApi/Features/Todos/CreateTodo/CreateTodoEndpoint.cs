@@ -12,16 +12,20 @@ internal sealed class CreateTodoEndpoint(CreateTodoHandler handler) : ICreateTod
         CreateTodoRequest request,
         CancellationToken ct)
     {
-        var todo = await handler.HandleAsync(request, ct);
+        var result = await handler.HandleAsync(new CreateTodoHandler.Command
+        {
+            Title = request.Title,
+            DueBy = request.DueBy?.Date
+        }, ct);
 
-        Activity.Current?.SetTodoId(todo.Id);
+        Activity.Current?.SetTodoId(result.Id);
 
         return TypedResults.Ok(new CreateTodoResponse
         {
-            Id = todo.Id,
-            Title = todo.Title,
-            DueBy = todo.DueBy,
-            IsComplete = todo.IsComplete
+            Id = result.Id,
+            Title = request.Title,
+            DueBy = request.DueBy?.Date,
+            IsComplete = false
         });
     }
 }
