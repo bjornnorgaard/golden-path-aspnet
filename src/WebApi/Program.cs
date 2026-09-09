@@ -15,7 +15,7 @@ var app = builder.Build();
 app.UsePlatformExceptionHandling();
 app.MapGeneratedTransportLayers();
 app.MapGeneratedGraphQlPlayground();
-app.UsePlatformHangfireDashboard();
+app.UsePlatformHangfire();
 app.MapPlatformOpenApi();
 app.UseDatabase();
 

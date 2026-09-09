@@ -1,13 +1,15 @@
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Annotations;
 using WebApi.Database;
+using WebApi.Features.Todos.SendTodoCompletedNotification;
 using WebApi.Telemetry;
 using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos.UpdateTodo;
 
 [Service(ServiceLifetime.Transient)]
-internal sealed class UpdateTodoHandler(TodoContext context)
+internal sealed class UpdateTodoHandler(TodoContext context, IBackgroundJobClient jobs)
 {
     public class Command
     {
@@ -44,6 +46,9 @@ internal sealed class UpdateTodoHandler(TodoContext context)
         if (todo.IsComplete && !wasComplete)
         {
             TelemetryConfig.RecordTodoCompleted();
+
+            // Fire-and-forget: the caller doesn't need to wait for this to run.
+            jobs.Enqueue<SendTodoCompletedNotificationJob>(j => j.InvokeAsync(todo.Id, CancellationToken.None));
         }
 
         return new Result

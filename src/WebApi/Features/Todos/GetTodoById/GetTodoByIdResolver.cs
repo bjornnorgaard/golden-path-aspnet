@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using HotChocolate.Resolvers;
 using Microsoft.EntityFrameworkCore;
 using WebApi.Database;
+using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.GraphQl;
 using TodoId = WebApi.Database.Models.TodoId;
@@ -12,6 +14,7 @@ internal sealed class GetTodoByIdResolver(TodoContext context) : IGetTodoByIdRes
     public async Task<GetTodoByIdResponse> ResolveAsync(GetTodoByIdRequest input, IResolverContext resolverContext, CancellationToken ct)
     {
         var id = TodoId.MustParse(input.Id);
+        Activity.Current?.SetTodoId(id);
 
         var result = await context.Todos
             .AsNoTracking()

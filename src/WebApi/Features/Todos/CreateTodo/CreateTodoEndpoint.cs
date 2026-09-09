@@ -12,10 +12,13 @@ internal sealed class CreateTodoEndpoint(CreateTodoHandler handler) : ICreateTod
         CreateTodoRequest request,
         CancellationToken ct)
     {
+        // Normalize to a UTC-kinded date once for both the command and the response.
+        var dueBy = request.DueBy.ToUtcDueDate();
+
         var result = await handler.HandleAsync(new CreateTodoHandler.Command
         {
             Title = request.Title,
-            DueBy = request.DueBy?.Date
+            DueBy = dueBy
         }, ct);
 
         Activity.Current?.SetTodoId(result.Id);
@@ -24,7 +27,7 @@ internal sealed class CreateTodoEndpoint(CreateTodoHandler handler) : ICreateTod
         {
             Id = result.Id,
             Title = request.Title,
-            DueBy = request.DueBy?.Date,
+            DueBy = dueBy,
             IsComplete = false
         });
     }

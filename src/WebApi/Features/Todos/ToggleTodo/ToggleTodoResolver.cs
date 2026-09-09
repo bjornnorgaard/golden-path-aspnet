@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using WebApi.Telemetry;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.GraphQl;
 using TodoId = WebApi.Database.Models.TodoId;
@@ -8,9 +10,12 @@ internal sealed class ToggleTodoResolver(ToggleTodoHandler handler) : IToggleTod
 {
     public async Task<ToggleTodoResponse> ResolveAsync(ToggleTodoRequest input, CancellationToken ct)
     {
+        var todoId = TodoId.MustParse(input.Id);
+        Activity.Current?.SetTodoId(todoId);
+
         var result = await handler.HandleAsync(new ToggleTodoHandler.Command
         {
-            Id = TodoId.MustParse(input.Id)
+            Id = todoId
         }, ct);
         if (result is null)
         {

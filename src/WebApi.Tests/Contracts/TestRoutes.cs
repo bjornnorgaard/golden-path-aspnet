@@ -9,5 +9,6 @@ public static class TestRoutes
         public const string GetList = "/todos/get-list";
         public const string Update = "/todos/update";
         public const string Delete = "/todos/delete";
+        public const string Toggle = "/todos/toggle";
     }
 }

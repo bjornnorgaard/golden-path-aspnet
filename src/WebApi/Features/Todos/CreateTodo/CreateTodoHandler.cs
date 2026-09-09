@@ -1,13 +1,15 @@
+using Hangfire;
 using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
+using WebApi.Features.Todos.SendTodoDueReminder;
 using WebApi.Telemetry;
 using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos.CreateTodo;
 
 [Service(ServiceLifetime.Transient)]
-internal sealed class CreateTodoHandler(TodoContext context)
+internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClient jobs)
 {
     public class Command
     {
@@ -34,6 +36,13 @@ internal sealed class CreateTodoHandler(TodoContext context)
         await context.SaveChangesAsync(ct);
 
         TelemetryConfig.RecordTodoCreated();
+
+        if (todo.DueBy is { } dueBy)
+        {
+            // Delayed job: scheduled to fire exactly when the todo becomes due. Hangfire clamps
+            // past-due schedules to run immediately, so no extra guard is needed here.
+            jobs.Schedule<SendTodoDueReminderJob>(j => j.InvokeAsync(todo.Id, CancellationToken.None), new DateTimeOffset(dueBy, TimeSpan.Zero));
+        }
 
         return new Result { Id = todo.Id };
     }
