@@ -4,6 +4,7 @@ using WebApi.Todos.GraphQl;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 builder.AddPlatformExceptionHandling();
+builder.AddPlatformCors();
 builder.AddWebApiGeneratedConfiguration();
 builder.AddGeneratedTransportLayers();
 builder.RegisterGeneratedServices();
@@ -13,6 +14,7 @@ builder.AddDatabase();
 
 var app = builder.Build();
 app.UsePlatformExceptionHandling();
+app.UsePlatformCors();
 app.MapGeneratedTransportLayers();
 app.MapGeneratedGraphQlPlayground();
 app.UsePlatformHangfire();

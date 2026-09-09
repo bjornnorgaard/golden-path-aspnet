@@ -17,5 +17,7 @@ public sealed class TestApiFactory : TestWebApplicationFactory<Program>
         // Each factory gets its own Hangfire schema so hosts running in parallel don't have their
         // workers steal and abandon each other's jobs in the shared Postgres container.
         builder.UseSetting("Hangfire:SchemaName", $"hangfire_{Guid.NewGuid():N}");
+
+        builder.UseSetting("Cors:AllowedOrigins:0", "https://allowed.test");
     }
 }
