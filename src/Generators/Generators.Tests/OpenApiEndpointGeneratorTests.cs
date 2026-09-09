@@ -56,6 +56,53 @@ components:
         await Assert.That(result.Generated).Contains("global::FluentValidation.IValidator<global::WebApi.Todos.Contracts.CreateTodoRequest> validator");
         await Assert.That(result.Generated).Contains("await validator.ValidateAsync(request, ct)");
         await Assert.That(result.Generated).Contains("public sealed class CreateTodoRequestValidator");
+        await Assert.That(result.Generated).Contains("validation.ToDictionary()");
+    }
+
+    [Test]
+    public async Task Generates_dictionary_typed_validation_error_response()
+    {
+        var result = Run("""
+openapi: 3.1.0
+paths:
+  /todos:
+    post:
+      operationId: createTodo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTodoResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+components:
+  schemas:
+    CreateTodoRequest:
+      type: object
+      properties:
+        title:
+          type: string
+    CreateTodoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+""", "public sealed class Handler : ICreateTodoEndpoint { }");
+        await Assert.That(result.Generated).Contains("BadRequest<global::System.Collections.Generic.IReadOnlyDictionary<string, string[]>>");
+        await Assert.That(result.Generated).DoesNotContain("WebApi.Todos.Contracts.global::");
     }
 
     [Test]

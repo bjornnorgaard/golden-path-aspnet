@@ -9,13 +9,13 @@ namespace WebApi.Features.Todos.UpdateTodo;
 
 internal sealed class UpdateTodoEndpoint(UpdateTodoHandler handler) : IUpdateTodoEndpoint
 {
-    public async Task<Results<Ok<UpdateTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+    public async Task<Results<Ok<UpdateTodoResponse>, BadRequest<IReadOnlyDictionary<string, string[]>>, NotFound<string>>> HandleAsync(
         UpdateTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
         {
-            return TypedResults.BadRequest("Id must be a valid UUID.");
+            return TypedResults.BadRequestTodoIdInvalid();
         }
 
         Activity.Current?.SetTodoId(todoId);

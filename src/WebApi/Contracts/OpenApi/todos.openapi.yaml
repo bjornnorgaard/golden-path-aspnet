@@ -29,9 +29,14 @@ paths:
         '400':
           description: The title violates the create-todo business rules.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
   /todos/get-by-id:
     post:
       operationId: getTodoById
@@ -54,9 +59,14 @@ paths:
         '400':
           description: The supplied todo ID is invalid.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
         '404':
           description: No todo exists with the supplied ID.
           content:
@@ -85,9 +95,14 @@ paths:
         '400':
           description: The paging request violates the list-todos business rules.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
   /todos/update:
     post:
       operationId: updateTodo
@@ -110,9 +125,14 @@ paths:
         '400':
           description: The update request violates the business rules.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
         '404':
           description: No todo exists with the supplied ID.
           content:
@@ -141,9 +161,14 @@ paths:
         '400':
           description: The update request violates the business rules.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
         '404':
           description: No todo exists with the supplied ID.
           content:
@@ -172,9 +197,14 @@ paths:
         '400':
           description: The supplied todo ID is invalid.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
         '404':
           description: No todo exists with the supplied ID.
           content:

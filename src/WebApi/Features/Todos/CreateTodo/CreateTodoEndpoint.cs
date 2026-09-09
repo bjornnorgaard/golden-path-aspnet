@@ -8,7 +8,7 @@ namespace WebApi.Features.Todos.CreateTodo;
 
 internal sealed class CreateTodoEndpoint(CreateTodoHandler handler) : ICreateTodoEndpoint
 {
-    public async Task<Results<Ok<CreateTodoResponse>, BadRequest<string>>> HandleAsync(
+    public async Task<Results<Ok<CreateTodoResponse>, BadRequest<IReadOnlyDictionary<string, string[]>>>> HandleAsync(
         CreateTodoRequest request,
         CancellationToken ct)
     {

@@ -6,7 +6,7 @@ namespace WebApi.Features.Todos.GetTodoList;
 
 internal sealed class GetTodoListEndpoint(GetTodoListHandler handler) : IGetTodoListEndpoint
 {
-    public async Task<Results<Ok<GetTodoListResponse>, BadRequest<string>>> HandleAsync(
+    public async Task<Results<Ok<GetTodoListResponse>, BadRequest<IReadOnlyDictionary<string, string[]>>>> HandleAsync(
         GetTodoListRequest request,
         CancellationToken ct)
     {

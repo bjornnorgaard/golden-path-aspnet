@@ -52,9 +52,10 @@ public class DeleteTodoTests : TestBase
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("Id");
-        await Assert.That(body).Contains("correct format");
+        var errors = await response.Content.ReadFromJsonAsync<Dictionary<string, string[]>>();
+        await Assert.That(errors).IsNotNull();
+        await Assert.That(errors!.ContainsKey("Id")).IsTrue();
+        await Assert.That(errors["Id"].Any(message => message.Contains("correct format"))).IsTrue();
     }
 
     [Test]

@@ -257,7 +257,7 @@ internal sealed class OpenApiResponse
     public int StatusCode { get; }
     public string Schema { get; }
     public string ContentType { get; }
-    public string Type(string contractsNamespace) => Schema is "object" or "string" or "int" or "bool" ? Schema : "global::" + contractsNamespace + "." + Schema;
+    public string Type(string contractsNamespace) => Schema is "object" or "string" or "int" or "bool" ? Schema : Schema.StartsWith("global::", StringComparison.Ordinal) ? Schema : "global::" + contractsNamespace + "." + Schema;
     public string ResultType(string contractsNamespace) => StatusCode switch { 200 or 201 => "global::Microsoft.AspNetCore.Http.HttpResults.Ok<" + Type(contractsNamespace) + ">", 400 => "global::Microsoft.AspNetCore.Http.HttpResults.BadRequest<" + Type(contractsNamespace) + ">", 404 => "global::Microsoft.AspNetCore.Http.HttpResults.NotFound<" + Type(contractsNamespace) + ">", _ => "global::Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult" };
 }
 

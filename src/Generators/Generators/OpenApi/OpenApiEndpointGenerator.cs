@@ -162,7 +162,7 @@ public sealed class OpenApiEndpointGenerator : IIncrementalGenerator
             sb.AppendLine("            var validation = await validator.ValidateAsync(request, ct);");
             sb.AppendLine("            if (!validation.IsValid)");
             sb.AppendLine("            {");
-            sb.AppendLine("                return global::Microsoft.AspNetCore.Http.TypedResults.BadRequest(string.Join(\"; \", validation.Errors.Select(static failure => failure.PropertyName + \": \" + failure.ErrorMessage))); ");
+            sb.AppendLine("                return global::Microsoft.AspNetCore.Http.TypedResults.BadRequest((global::System.Collections.Generic.IReadOnlyDictionary<string, string[]>)validation.ToDictionary());");
             sb.AppendLine("            }");
             sb.AppendLine("            return await handler.HandleAsync(request, ct);");
             sb.AppendLine("        })");

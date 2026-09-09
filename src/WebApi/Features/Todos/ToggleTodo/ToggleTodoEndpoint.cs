@@ -9,13 +9,13 @@ namespace WebApi.Features.Todos.ToggleTodo;
 
 internal sealed class ToggleTodoEndpoint(ToggleTodoHandler handler) : IToggleTodoEndpoint
 {
-    public async Task<Results<Ok<ToggleTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+    public async Task<Results<Ok<ToggleTodoResponse>, BadRequest<IReadOnlyDictionary<string, string[]>>, NotFound<string>>> HandleAsync(
         ToggleTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
         {
-            return TypedResults.BadRequest("Id must be a valid UUID.");
+            return TypedResults.BadRequestTodoIdInvalid();
         }
 
         Activity.Current?.SetTodoId(todoId);

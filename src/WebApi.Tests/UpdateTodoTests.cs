@@ -73,9 +73,10 @@ public class UpdateTodoTests : TestBase
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("Title");
-        await Assert.That(body).Contains("at least 3");
+        var errors = await response.Content.ReadFromJsonAsync<Dictionary<string, string[]>>();
+        await Assert.That(errors).IsNotNull();
+        await Assert.That(errors!.ContainsKey("Title")).IsTrue();
+        await Assert.That(errors["Title"].Any(message => message.Contains("at least 3"))).IsTrue();
     }
 
     [Test]
@@ -95,9 +96,10 @@ public class UpdateTodoTests : TestBase
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("Id");
-        await Assert.That(body).Contains("correct format");
+        var errors = await response.Content.ReadFromJsonAsync<Dictionary<string, string[]>>();
+        await Assert.That(errors).IsNotNull();
+        await Assert.That(errors!.ContainsKey("Id")).IsTrue();
+        await Assert.That(errors["Id"].Any(message => message.Contains("correct format"))).IsTrue();
     }
 
     [Test]

@@ -9,13 +9,13 @@ namespace WebApi.Features.Todos.DeleteTodo;
 
 internal sealed class DeleteTodoEndpoint(DeleteTodoHandler handler) : IDeleteTodoEndpoint
 {
-    public async Task<Results<Ok<DeleteTodoResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+    public async Task<Results<Ok<DeleteTodoResponse>, BadRequest<IReadOnlyDictionary<string, string[]>>, NotFound<string>>> HandleAsync(
         DeleteTodoRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
         {
-            return TypedResults.BadRequest("Id must be a valid UUID.");
+            return TypedResults.BadRequestTodoIdInvalid();
         }
         
         Activity.Current?.SetTodoId(todoId);

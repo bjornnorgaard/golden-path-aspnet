@@ -9,13 +9,13 @@ namespace WebApi.Features.Todos.GetTodoById;
 
 internal sealed class GetTodoByIdEndpoint(GetTodoByIdHandler handler) : IGetTodoByIdEndpoint
 {
-    public async Task<Results<Ok<GetTodoByIdResponse>, BadRequest<string>, NotFound<string>>> HandleAsync(
+    public async Task<Results<Ok<GetTodoByIdResponse>, BadRequest<IReadOnlyDictionary<string, string[]>>, NotFound<string>>> HandleAsync(
         GetTodoByIdRequest request,
         CancellationToken ct)
     {
         if (!TodoId.TryParse(request.Id, out var todoId))
         {
-            return TypedResults.BadRequest("Id must be a valid UUID.");
+            return TypedResults.BadRequestTodoIdInvalid();
         }
 
         Activity.Current?.SetTodoId(todoId);

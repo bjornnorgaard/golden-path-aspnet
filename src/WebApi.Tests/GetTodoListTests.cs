@@ -131,9 +131,10 @@ public class GetTodoListTests : TestBase
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("Offset");
-        await Assert.That(body).Contains("greater than or equal to '0'");
+        var errors = await response.Content.ReadFromJsonAsync<Dictionary<string, string[]>>();
+        await Assert.That(errors).IsNotNull();
+        await Assert.That(errors!.ContainsKey("Offset")).IsTrue();
+        await Assert.That(errors["Offset"].Any(message => message.Contains("greater than or equal to '0'"))).IsTrue();
     }
 
     [Test]
@@ -147,8 +148,9 @@ public class GetTodoListTests : TestBase
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadAsStringAsync();
-        await Assert.That(body).Contains("Limit");
-        await Assert.That(body).Contains("greater than or equal to '1'");
+        var errors = await response.Content.ReadFromJsonAsync<Dictionary<string, string[]>>();
+        await Assert.That(errors).IsNotNull();
+        await Assert.That(errors!.ContainsKey("Limit")).IsTrue();
+        await Assert.That(errors["Limit"].Any(message => message.Contains("greater than or equal to '1'"))).IsTrue();
     }
 }
