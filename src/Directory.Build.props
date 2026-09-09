@@ -1,13 +1,18 @@
 <Project>
-
     <PropertyGroup>
+        <!-- Enable nullable reference type annotations and warnings across all projects -->
         <Nullable>enable</Nullable>
+        <!-- Fail the build on any compiler warning to keep the codebase warning-free -->
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <!-- Auto-include common global usings (e.g. System, System.Linq) without explicit using directives -->
         <ImplicitUsings>enable</ImplicitUsings>
+        <!-- Always use the newest C# language version supported by the installed SDK -->
         <LangVersion>latest</LangVersion>
+        <!-- Prevent projects from being packed as NuGet packages -->
         <IsPackable>false</IsPackable>
+        <!-- Produce byte-for-byte identical builds given the same inputs -->
         <Deterministic>true</Deterministic>
+        <!-- Embed extra determinism/path info required for reproducible builds when running in GitHub Actions -->
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
-
 </Project>
