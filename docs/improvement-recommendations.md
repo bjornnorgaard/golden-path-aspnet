@@ -1,23 +1,22 @@
 # Improvement recommendations
 
-Gaps identified in the current reference app, grouped by area. Priority order: auth pattern + Hangfire dashboard auth + health checks first (missing on day one for anyone copying this template), then CI caching/Dependabot, then rate limiting/CORS/resilience.
+Gaps identified in the current reference app, grouped by area. Priority order: auth pattern + Hangfire dashboard auth first (missing on day one for anyone copying this template), then the startup-safety items (dev tooling exposure, auto-migration), then Dependabot/CodeQL/rate limiting/resilience.
 
 ## Security
 
 - [ ] No authentication/authorization anywhere — add an `[Authorize]`-capable pattern (even a simple JWT/API-key scheme) so teams copying this template don't ship an open API by default.
-- [x] No CORS policy configured.
 - [ ] No rate limiting (`Microsoft.AspNetCore.RateLimiting` is built into ASP.NET Core, no extra dependency needed).
 - [ ] Hangfire dashboard is enabled (`DashboardEnabled: true`) with no authorization filter — `src/WebApi/Configurations/HangfireConfiguration.cs` should require an authorization filter before exposing `/hangfire`.
 - [ ] Default DB credentials live in plaintext in `src/WebApi/appsettings.json` — fine for a sample, but the README should steer real deployments to user-secrets/Key Vault.
+- [ ] The Scalar API reference (`MapPlatformOpenApi`) and GraphQL Playground (`MapGeneratedGraphQlPlayground`) are mapped unconditionally in [Program.cs](src/WebApi/Program.cs), with no `IsDevelopment()` or config-toggle gate like Hangfire's `DashboardEnabled` — both are exposed in Production by default.
 
 ## Reliability
 
-- [x] No health check endpoints (`/health`, `/health/ready`) — add via `AddHealthChecks().AddNpgSql(...)` so orchestrators can probe the app.
 - [ ] No resilience policies around outbound calls (Hangfire jobs, DB) — `Microsoft.Extensions.Http.Resilience` (Polly-based, MS-supported) fits the AOT-friendly, source-generator-heavy style already used here.
+- [ ] `UseDatabase()` in [DatabaseConfiguration.cs](src/WebApi/Configurations/DatabaseConfiguration.cs) calls `dbContext.Database.Migrate()` on every app startup, unconditionally and with no environment gate — scaling to multiple instances races them to apply migrations concurrently, and there's no separation between "apply schema" and "start serving traffic."
 
 ## CI/CD
 
-- [x] `.github/workflows/build-and-test.yml` has no NuGet caching (`actions/setup-dotnet` supports `cache: true`).
 - [ ] No code coverage collection/upload in CI.
 - [ ] No Dependabot config for keeping the pinned packages in `src/Directory.Packages.props` current.
 - [ ] No CodeQL/security scanning workflow.
@@ -26,8 +25,3 @@ Gaps identified in the current reference app, grouped by area. Priority order: a
 ## API surface
 
 - [ ] No API versioning strategy for the REST or GraphQL endpoints — decide now before there are real consumers.
-- [ ] Verify `[ProducesResponseType]`/`ProblemDetails` coverage is consistent across features (OpenAPI/Scalar is present, but response documentation conventions weren't confirmed).
-
-## Housekeeping
-
-- [x] `src/Directory.Build.props` had an in-progress uncommitted change (explanatory comments) as of this review — confirm it's committed or discarded. (Committed in d06e09f; working tree is clean.)
