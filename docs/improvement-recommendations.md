@@ -30,4 +30,4 @@ Gaps identified in the current reference app, grouped by area. Priority order: a
 
 ## Housekeeping
 
-- [ ] `src/Directory.Build.props` had an in-progress uncommitted change (explanatory comments) as of this review — confirm it's committed or discarded.
+- [x] `src/Directory.Build.props` had an in-progress uncommitted change (explanatory comments) as of this review — confirm it's committed or discarded. (Committed in d06e09f; working tree is clean.)
