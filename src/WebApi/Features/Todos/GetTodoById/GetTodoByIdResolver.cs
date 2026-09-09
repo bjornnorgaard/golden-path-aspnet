@@ -8,18 +8,21 @@ internal sealed class GetTodoByIdResolver(GetTodoByIdHandler handler) : IGetTodo
 {
     public async Task<GetTodoByIdResponse> ResolveAsync(GetTodoByIdRequest input, CancellationToken ct)
     {
-        var todo = await handler.HandleAsync(TodoId.MustParse(input.Id), ct);
-        if (todo is null)
+        var result = await handler.HandleAsync(new GetTodoByIdHandler.Command
+        {
+            Id = TodoId.MustParse(input.Id)
+        }, ct);
+        if (result is null)
         {
             throw new HotChocolate.GraphQLException("Todo was not found.");
         }
 
         return new GetTodoByIdResponse
         {
-            Id = todo.Id.Value,
-            Title = todo.Title,
-            DueBy = todo.DueBy,
-            IsComplete = todo.IsComplete
+            Id = result.Id.Value,
+            Title = result.Title,
+            DueBy = result.DueBy,
+            IsComplete = result.IsComplete
         };
     }
 }

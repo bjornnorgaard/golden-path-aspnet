@@ -10,15 +10,15 @@ internal sealed class DeleteTodoResolver(DeleteTodoHandler handler) : IDeleteTod
     {
         var todoId = TodoId.MustParse(input.Id);
         
-        var deleted = await handler.HandleAsync(todoId, ct);
-        if (!deleted)
+        var result = await handler.HandleAsync(new DeleteTodoHandler.Command { Id = todoId }, ct);
+        if (result is null)
         {
             throw new HotChocolate.GraphQLException("Todo was not found.");
         }
 
         return new DeleteTodoResponse
         {
-            Id = todoId.Value
+            Id = result.Id.Value
         };
     }
 }

@@ -2,7 +2,6 @@ using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
 using WebApi.Telemetry;
-using WebApi.Todos.Contracts;
 using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos.CreateTodo;

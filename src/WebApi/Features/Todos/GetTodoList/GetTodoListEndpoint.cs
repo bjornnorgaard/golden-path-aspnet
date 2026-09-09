@@ -10,11 +10,15 @@ internal sealed class GetTodoListEndpoint(GetTodoListHandler handler) : IGetTodo
         GetTodoListRequest request,
         CancellationToken ct)
     {
-        var todos = await handler.HandleAsync(request.Limit, request.Offset, ct);
+        var result = await handler.HandleAsync(new GetTodoListHandler.Command
+        {
+            Limit = request.Limit,
+            Offset = request.Offset
+        }, ct);
 
         return TypedResults.Ok(new GetTodoListResponse
         {
-            Todos = todos
+            Todos = result.Todos
         });
     }
 }

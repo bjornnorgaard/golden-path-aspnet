@@ -7,11 +7,15 @@ internal sealed class GetTodoListResolver(GetTodoListHandler handler) : IGetTodo
 {
     public async Task<GetTodoListResponse> ResolveAsync(GetTodoListRequest input, CancellationToken ct)
     {
-        var todos = await handler.HandleAsync(input.Limit, input.Offset, ct);
+        var result = await handler.HandleAsync(new GetTodoListHandler.Command
+        {
+            Limit = input.Limit,
+            Offset = input.Offset
+        }, ct);
         
         return new GetTodoListResponse
         {
-            Todos = todos
+            Todos = result.Todos
         };
     }
 }

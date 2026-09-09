@@ -20,18 +20,24 @@ internal sealed class UpdateTodoEndpoint(UpdateTodoHandler handler) : IUpdateTod
 
         Activity.Current?.SetTodoId(todoId);
 
-        var todo = await handler.HandleAsync(todoId, request, ct);
-        if (todo is null)
+        var result = await handler.HandleAsync(new UpdateTodoHandler.Command
+        {
+            Id = todoId,
+            Title = request.Title,
+            DueBy = request.DueBy?.Date,
+            IsComplete = request.IsComplete
+        }, ct);
+        if (result is null)
         {
             return TypedResults.NotFound("Todo was not found.");
         }
 
         return TypedResults.Ok(new UpdateTodoResponse
         {
-            Id = todo.Id.Value,
-            Title = todo.Title,
-            DueBy = todo.DueBy,
-            IsComplete = todo.IsComplete
+            Id = result.Id.Value,
+            Title = result.Title,
+            DueBy = result.DueBy,
+            IsComplete = result.IsComplete
         });
     }
 }

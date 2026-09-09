@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WebApi.Annotations;
 using WebApi.Database;
-using WebApi.Database.Models;
 using WebApi.Telemetry;
 using TodoId = WebApi.Database.Models.TodoId;
 
@@ -10,9 +9,22 @@ namespace WebApi.Features.Todos.ToggleTodo;
 [Service(ServiceLifetime.Transient)]
 internal sealed class ToggleTodoHandler(TodoContext context)
 {
-    public async Task<Todo?> HandleAsync(TodoId todoId, CancellationToken ct)
+    public class Command
     {
-        var todo = await context.Todos.FirstOrDefaultAsync(item => item.Id == todoId, ct);
+        public TodoId Id { get; set; }
+    }
+
+    public class Result
+    {
+        public TodoId Id { get; set; }
+        public string Title { get; set; } = null!;
+        public DateTime? DueBy { get; set; }
+        public bool IsComplete { get; set; }
+    }
+
+    public async Task<Result?> HandleAsync(Command request, CancellationToken ct)
+    {
+        var todo = await context.Todos.FirstOrDefaultAsync(item => item.Id == request.Id, ct);
 
         if (todo is null)
         {
@@ -27,6 +39,12 @@ internal sealed class ToggleTodoHandler(TodoContext context)
             TelemetryConfig.RecordTodoCompleted();
         }
 
-        return todo;
+        return new Result
+        {
+            Id = todo.Id,
+            Title = todo.Title,
+            DueBy = todo.DueBy,
+            IsComplete = todo.IsComplete
+        };
     }
 }

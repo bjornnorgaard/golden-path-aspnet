@@ -8,18 +8,24 @@ internal sealed class UpdateTodoResolver(UpdateTodoHandler handler) : IUpdateTod
 {
     public async Task<UpdateTodoResponse> ResolveAsync(UpdateTodoRequest input, CancellationToken ct)
     {
-        var todo = await handler.HandleAsync(TodoId.MustParse(input.Id), input, ct);
-        if (todo is null)
+        var result = await handler.HandleAsync(new UpdateTodoHandler.Command
+        {
+            Id = TodoId.MustParse(input.Id),
+            Title = input.Title,
+            DueBy = input.DueBy?.Date,
+            IsComplete = input.IsComplete
+        }, ct);
+        if (result is null)
         {
             throw new HotChocolate.GraphQLException("Todo was not found.");
         }
         
         return new UpdateTodoResponse
         {
-            Id = todo.Id.Value,
-            Title = todo.Title,
-            DueBy = todo.DueBy,
-            IsComplete = todo.IsComplete
+            Id = result.Id.Value,
+            Title = result.Title,
+            DueBy = result.DueBy,
+            IsComplete = result.IsComplete
         };
     }
 }

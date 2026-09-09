@@ -8,12 +8,27 @@ namespace WebApi.Features.Todos.DeleteTodo;
 [Service(ServiceLifetime.Transient)]
 internal sealed class DeleteTodoHandler(TodoContext context)
 {
-    public async Task<bool> HandleAsync(TodoId todoId, CancellationToken ct)
+    public class Command
+    {
+        public TodoId Id { get; set; }
+    }
+
+    public class Result
+    {
+        public TodoId Id { get; set; }
+    }
+
+    public async Task<Result?> HandleAsync(Command request, CancellationToken ct)
     {
         var deleted = await context.Todos
-            .Where(todo => todo.Id == todoId)
+            .Where(todo => todo.Id == request.Id)
             .ExecuteDeleteAsync(ct);
 
-        return deleted > 0;
+        if (deleted <= 0)
+        {
+            return null;
+        }
+
+        return new Result { Id = request.Id };
     }
 }

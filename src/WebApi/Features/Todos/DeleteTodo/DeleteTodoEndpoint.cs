@@ -20,11 +20,12 @@ internal sealed class DeleteTodoEndpoint(DeleteTodoHandler handler) : IDeleteTod
         
         Activity.Current?.SetTodoId(todoId);
 
-        if (!await handler.HandleAsync(todoId, ct))
+        var result = await handler.HandleAsync(new DeleteTodoHandler.Command { Id = todoId }, ct);
+        if (result is null)
         {
             return TypedResults.NotFound("Todo was not found.");
         }
 
-        return TypedResults.Ok(new DeleteTodoResponse { Id = todoId.Value });
+        return TypedResults.Ok(new DeleteTodoResponse { Id = result.Id.Value });
     }
 }
