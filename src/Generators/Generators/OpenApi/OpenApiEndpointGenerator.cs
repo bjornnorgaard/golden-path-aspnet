@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -68,21 +65,26 @@ public sealed class OpenApiEndpointGenerator : IIncrementalGenerator
                     {
                         sb.AppendLine($"    [global::System.ComponentModel.DescriptionAttribute(\"{schema.EnumDescriptions[index].Replace("\\\"", "\\\\\"")}\")]");
                     }
+
                     sb.AppendLine($"    {schema.EnumValues[index]}{(index == schema.EnumValues.Length - 1 ? string.Empty : ",")}");
                 }
+
                 sb.AppendLine("}");
                 sb.AppendLine();
                 continue;
             }
+
             sb.AppendLine($"public class {schema.Name}{(schema.Reference is null ? string.Empty : " : " + schema.Reference)}");
             sb.AppendLine("{");
             foreach (var property in schema.Properties)
             {
                 sb.AppendLine($"    public {property.CSharpType} {property.CSharpName} {{ get; init; }}{(property.IsRequired && property.IsReferenceType ? " = null!;" : string.Empty)}");
             }
+
             sb.AppendLine("}");
             sb.AppendLine();
         }
+
         return sb.ToString();
     }
 
@@ -140,8 +142,10 @@ public sealed class OpenApiEndpointGenerator : IIncrementalGenerator
             {
                 sb.AppendLine($"        services.AddScoped<{"I" + ToPascalCase(operation.Id) + "Endpoint"}, global::{implementation.FullName}>();");
             }
+
             sb.AppendLine($"        services.AddScoped<global::FluentValidation.IValidator<{operation.RequestType(contractsNamespace)}>, {operation.RequestSchema}Validator>();");
         }
+
         sb.AppendLine("        return services;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
@@ -167,8 +171,10 @@ public sealed class OpenApiEndpointGenerator : IIncrementalGenerator
             {
                 sb.AppendLine($"            .Produces<{response.Type(contractsNamespace)}>({response.StatusCode}, \"{response.ContentType}\")");
             }
+
             sb.AppendLine(";");
         }
+
         sb.AppendLine("        return endpoints;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
@@ -193,6 +199,7 @@ public sealed class OpenApiEndpointGenerator : IIncrementalGenerator
             if (property.IsNullable && (property.Minimum is not null || property.Maximum is not null)) sb.Append($".When(request => request.{property.CSharpName}.HasValue)");
             sb.AppendLine(";");
         }
+
         sb.AppendLine("    }");
         sb.AppendLine("}");
         sb.AppendLine();
@@ -217,7 +224,12 @@ public sealed class OpenApiEndpointGenerator : IIncrementalGenerator
 
     private sealed class InputFile
     {
-        public InputFile(string path, SourceText? text) { Path = path; Text = text; }
+        public InputFile(string path, SourceText? text)
+        {
+            Path = path;
+            Text = text;
+        }
+
         public string Path { get; }
         public SourceText? Text { get; }
     }

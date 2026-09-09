@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -60,6 +58,7 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             {
                 sb.AppendLine($"    global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> ResolveAsync(global::{contractsNamespace}.{operation.RequestType} input, global::System.Threading.CancellationToken ct);");
             }
+
             sb.AppendLine("}");
             sb.AppendLine();
         }
@@ -77,8 +76,10 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
                 output.ReportDiagnostic(Diagnostic.Create(MissingResolver, Location.None, operation.Id, interfaceName));
                 continue;
             }
+
             sb.AppendLine($"        services.AddScoped<{interfaceName}, global::{matches[0].FullName}>();");
         }
+
         sb.AppendLine("        services.AddGraphQLServer()");
         sb.AppendLine($"            .AddQueryType<{classPrefix}Query>()");
         sb.AppendLine($"            .AddMutationType<{classPrefix}Mutation>();");
@@ -134,6 +135,7 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             {
                 sb.AppendLine($"    public async global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> {ToPascalCase(operation.Id)}Async(global::{contractsNamespace}.{operation.RequestType} input, [global::HotChocolate.ServiceAttribute] {interfaceName} resolver, [global::HotChocolate.ServiceAttribute] global::FluentValidation.IValidator<global::{contractsNamespace}.{operation.RequestType}> validator, global::System.Threading.CancellationToken ct)");
             }
+
             sb.AppendLine("    {");
             sb.AppendLine($"        const string operationName = \"graphql.{operation.OperationType.ToLowerInvariant()}.{operation.Id}\";");
             sb.AppendLine("        global::System.Diagnostics.Activity.Current?.SetTag(\"graphql.operation.name\", operationName);");
@@ -153,6 +155,7 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             {
                 sb.AppendLine("            return await resolver.ResolveAsync(input, ct);");
             }
+
             sb.AppendLine("        }");
             sb.AppendLine("        catch (global::System.Exception ex)");
             sb.AppendLine("        {");
@@ -164,6 +167,7 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             sb.AppendLine("    }");
             sb.AppendLine();
         }
+
         sb.AppendLine("}");
         sb.AppendLine();
     }
@@ -196,7 +200,12 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
 
     private sealed class InputFile
     {
-        public InputFile(string path, SourceText? text) { Path = path; Text = text; }
+        public InputFile(string path, SourceText? text)
+        {
+            Path = path;
+            Text = text;
+        }
+
         public string Path { get; }
         public SourceText? Text { get; }
     }

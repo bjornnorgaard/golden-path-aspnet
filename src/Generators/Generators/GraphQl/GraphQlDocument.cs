@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.Text;
 
@@ -30,7 +29,7 @@ internal sealed class GraphQlDocument
                 field.Groups["input"].Value,
                 field.Groups["result"].Value)))
             .ToImmutableArray();
-        var name = System.IO.Path.GetFileNameWithoutExtension(path);
+        var name = Path.GetFileNameWithoutExtension(path);
         return new GraphQlDocument(char.ToUpperInvariant(name[0]) + name.Substring(1), operations);
     }
 }

@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -39,7 +37,7 @@ internal sealed class OpenApiDocument
         }
 
         var lines = text.Lines.Select(static line => line.ToString()).ToArray();
-        var name = System.IO.Path.GetFileNameWithoutExtension(System.IO.Path.GetFileNameWithoutExtension(path));
+        var name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(path));
         name = char.ToUpperInvariant(name[0]) + name.Substring(1);
         return new OpenApiDocument(name, "WebApi", ParseOperations(path, text, lines), ParseSchemas(lines));
     }
@@ -69,8 +67,10 @@ internal sealed class OpenApiDocument
                 operations.Add(new OpenApiOperation(idMatch.Groups["id"].Value, route, methodMatch.Groups["method"].Value.ToLowerInvariant(), request, responses, Location.Create(path, span, text.Lines.GetLinePositionSpan(span))));
                 cursor = operationEnd - 1;
             }
+
             index = pathEnd - 1;
         }
+
         return operations.ToImmutable();
     }
 
@@ -86,9 +86,10 @@ internal sealed class OpenApiDocument
             var responseLines = lines.Skip(index + 1).Take(responseEnd - index - 1).ToArray();
             var reference = FindReference(responseLines, 0, responseLines.Length) ?? TypeFrom(responseLines);
             var contentType = responseLines.Any(static line => line.Trim() == "text/plain:") ? "text/plain" : "application/json";
-            responses.Add(new OpenApiResponse(int.Parse(match.Groups["status"].Value), reference, contentType));
+            responses.Add(new OpenApiResponse(int.Parse(match.Groups["status"].Value, CultureInfo.InvariantCulture), reference, contentType));
             index = responseEnd - 1;
         }
+
         return responses.ToImmutable();
     }
 
@@ -124,6 +125,7 @@ internal sealed class OpenApiDocument
                     ParseIntegerFacet(propertyLines, "maximum:")));
                 cursor = propertyEnd - 1;
             }
+
             var schemaReference = lines
                 .Skip(index + 1)
                 .Take(end - index - 1)
@@ -135,6 +137,7 @@ internal sealed class OpenApiDocument
             schemas.Add(new OpenApiSchema(schemaMatch.Groups["name"].Value, properties.ToImmutable(), schemaReference, enumValues, enumDescriptions));
             index = end - 1;
         }
+
         return schemas.ToImmutable();
     }
 
@@ -160,7 +163,8 @@ internal sealed class OpenApiDocument
     {
         var line = lines.FirstOrDefault(static item => item.TrimStart().StartsWith("required:", StringComparison.Ordinal));
         if (line is null) return new HashSet<string>(StringComparer.Ordinal);
-        var open = line.IndexOf('['); var close = line.IndexOf(']');
+        var open = line.IndexOf('[');
+        var close = line.IndexOf(']');
         return open < 0 || close < open ? new HashSet<string>(StringComparer.Ordinal) : new HashSet<string>(line.Substring(open + 1, close - open - 1).Split(',').Select(static item => item.Trim()), StringComparer.Ordinal);
     }
 
@@ -168,7 +172,8 @@ internal sealed class OpenApiDocument
     {
         var line = lines.FirstOrDefault(item => item.TrimStart().StartsWith(key, StringComparison.Ordinal));
         if (line is null) return ImmutableArray<string>.Empty;
-        var open = line.IndexOf('['); var close = line.LastIndexOf(']');
+        var open = line.IndexOf('[');
+        var close = line.LastIndexOf(']');
         if (open < 0 || close < open) return ImmutableArray<string>.Empty;
         return line.Substring(open + 1, close - open - 1)
             .Split(',')
@@ -192,41 +197,111 @@ internal sealed class OpenApiDocument
     private static int FindBlockEnd(string[] lines, int start, int indentation, int maximum = -1)
     {
         var end = maximum < 0 ? lines.Length : maximum;
-        for (var index = start; index < end; index++) if (lines[index].Length > 0 && CountSpaces(lines[index]) <= indentation) return index;
+        for (var index = start; index < end; index++)
+            if (lines[index].Length > 0 && CountSpaces(lines[index]) <= indentation)
+                return index;
         return end;
     }
-    private static int FindLine(string[] lines, int start, int end, string value) { for (var i = start; i < end; i++) if (lines[i] == value) return i; return -1; }
+
+    private static int FindLine(string[] lines, int start, int end, string value)
+    {
+        for (var i = start; i < end; i++)
+            if (lines[i] == value)
+                return i;
+        return -1;
+    }
+
     private static string? FindReference(IEnumerable<string> lines, int start, int end) => lines.Skip(start).Take(end - start).Select(line => ReferencePattern.Match(line)).Where(static match => match.Success).Select(static match => match.Groups["name"].Value).FirstOrDefault();
-    private static int CountSpaces(string value) { var count = 0; while (count < value.Length && value[count] == ' ') count++; return count; }
+
+    private static int CountSpaces(string value)
+    {
+        var count = 0;
+        while (count < value.Length && value[count] == ' ') count++;
+        return count;
+    }
+
     private static string ToPascalCase(string value) => char.ToUpperInvariant(value[0]) + value.Substring(1);
 }
 
 internal sealed class OpenApiOperation
 {
-    public OpenApiOperation(string id, string path, string method, string requestSchema, ImmutableArray<OpenApiResponse> responses, Location location) { Id = id; Path = path; Method = method; RequestSchema = requestSchema; Responses = responses; Location = location; }
-    public string Id { get; } public string Path { get; } public string Method { get; } public string RequestSchema { get; } public ImmutableArray<OpenApiResponse> Responses { get; } public Location Location { get; }
+    public OpenApiOperation(string id, string path, string method, string requestSchema, ImmutableArray<OpenApiResponse> responses, Location location)
+    {
+        Id = id;
+        Path = path;
+        Method = method;
+        RequestSchema = requestSchema;
+        Responses = responses;
+        Location = location;
+    }
+
+    public string Id { get; }
+    public string Path { get; }
+    public string Method { get; }
+    public string RequestSchema { get; }
+    public ImmutableArray<OpenApiResponse> Responses { get; }
+    public Location Location { get; }
     public string RequestType(string contractsNamespace) => RequestSchema == "object" ? "object" : "global::" + contractsNamespace + "." + RequestSchema;
     public string ResultType(string contractsNamespace) => "global::Microsoft.AspNetCore.Http.HttpResults.Results<" + string.Join(", ", Responses.Select(response => response.ResultType(contractsNamespace))) + ">";
 }
+
 internal sealed class OpenApiResponse
 {
-    public OpenApiResponse(int statusCode, string schema, string contentType) { StatusCode = statusCode; Schema = schema; ContentType = contentType; }
-    public int StatusCode { get; } public string Schema { get; } public string ContentType { get; }
+    public OpenApiResponse(int statusCode, string schema, string contentType)
+    {
+        StatusCode = statusCode;
+        Schema = schema;
+        ContentType = contentType;
+    }
+
+    public int StatusCode { get; }
+    public string Schema { get; }
+    public string ContentType { get; }
     public string Type(string contractsNamespace) => Schema is "object" or "string" or "int" or "bool" ? Schema : "global::" + contractsNamespace + "." + Schema;
     public string ResultType(string contractsNamespace) => StatusCode switch { 200 or 201 => "global::Microsoft.AspNetCore.Http.HttpResults.Ok<" + Type(contractsNamespace) + ">", 400 => "global::Microsoft.AspNetCore.Http.HttpResults.BadRequest<" + Type(contractsNamespace) + ">", 404 => "global::Microsoft.AspNetCore.Http.HttpResults.NotFound<" + Type(contractsNamespace) + ">", _ => "global::Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult" };
 }
+
 internal sealed class OpenApiSchema
 {
-    public OpenApiSchema(string name, ImmutableArray<OpenApiProperty> properties, string? reference, ImmutableArray<string> enumValues, ImmutableArray<string> enumDescriptions) { Name = name; Properties = properties; Reference = reference; EnumValues = enumValues; EnumDescriptions = enumDescriptions; }
-    public string Name { get; } public ImmutableArray<OpenApiProperty> Properties { get; } public string? Reference { get; }
-    public ImmutableArray<string> EnumValues { get; } public ImmutableArray<string> EnumDescriptions { get; }
+    public OpenApiSchema(string name, ImmutableArray<OpenApiProperty> properties, string? reference, ImmutableArray<string> enumValues, ImmutableArray<string> enumDescriptions)
+    {
+        Name = name;
+        Properties = properties;
+        Reference = reference;
+        EnumValues = enumValues;
+        EnumDescriptions = enumDescriptions;
+    }
+
+    public string Name { get; }
+    public ImmutableArray<OpenApiProperty> Properties { get; }
+    public string? Reference { get; }
+    public ImmutableArray<string> EnumValues { get; }
+    public ImmutableArray<string> EnumDescriptions { get; }
     public bool IsEnum => !EnumValues.IsEmpty;
 }
+
 internal sealed class OpenApiProperty
 {
-    public OpenApiProperty(string name, string cSharpName, string cSharpType, bool isRequired, string? pattern, int? minLength, int? minimum, int? maximum) { Name = name; CSharpName = cSharpName; CSharpType = cSharpType; IsRequired = isRequired; Pattern = pattern; MinLength = minLength; Minimum = minimum; Maximum = maximum; }
-    public string Name { get; } public string CSharpName { get; } public string CSharpType { get; } public bool IsRequired { get; }
-    public string? Pattern { get; } public int? MinLength { get; } public int? Minimum { get; } public int? Maximum { get; }
+    public OpenApiProperty(string name, string cSharpName, string cSharpType, bool isRequired, string? pattern, int? minLength, int? minimum, int? maximum)
+    {
+        Name = name;
+        CSharpName = cSharpName;
+        CSharpType = cSharpType;
+        IsRequired = isRequired;
+        Pattern = pattern;
+        MinLength = minLength;
+        Minimum = minimum;
+        Maximum = maximum;
+    }
+
+    public string Name { get; }
+    public string CSharpName { get; }
+    public string CSharpType { get; }
+    public bool IsRequired { get; }
+    public string? Pattern { get; }
+    public int? MinLength { get; }
+    public int? Minimum { get; }
+    public int? Maximum { get; }
     public bool IsReferenceType => CSharpType == "string" || CSharpType.StartsWith("global::System.Collections", StringComparison.Ordinal);
     public bool IsNullable => CSharpType.EndsWith("?", StringComparison.Ordinal);
 }

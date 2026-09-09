@@ -1,4 +1,3 @@
-using System.Linq;
 using HotChocolate.Execution.Processing;
 using HotChocolate.Resolvers;
 using Microsoft.EntityFrameworkCore;

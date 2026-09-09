@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -17,7 +14,7 @@ public sealed class ActivityTagExtensionsGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor MissingTagValueTypeAttribute = new(
         id: "GP0001",
         title: "Missing TagKeyAttribute",
-        messageFormat: "Tag key '{0}' must declare a [TagKey(typeof(...))] attribute to generate an Activity tag setter.",
+        messageFormat: "Tag key '{0}' must declare a [TagKey(typeof(...))] attribute to generate an Activity tag setter",
         category: "GoldenPath.Telemetry",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -35,7 +32,7 @@ public sealed class ActivityTagExtensionsGenerator : IIncrementalGenerator
                         return null;
                     }
 
-                    var symbol = syntaxContext.SemanticModel.GetDeclaredSymbol(classDecl) as INamedTypeSymbol;
+                    var symbol = syntaxContext.SemanticModel.GetDeclaredSymbol(classDecl, _) as INamedTypeSymbol;
                     if (symbol == null)
                     {
                         return null;

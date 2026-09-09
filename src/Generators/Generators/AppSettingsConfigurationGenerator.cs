@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
@@ -281,6 +277,7 @@ public sealed class AppSettingsConfigurationGenerator : IIncrementalGenerator
                 {
                     sb.AppendLine($"    [global::Microsoft.Extensions.Configuration.ConfigurationKeyName(\"{EscapeStringLiteral(prop.JsonKey)}\")]");
                 }
+
                 sb.AppendLine($"    public required {prop.CSharpType} {prop.Name} {{ get; set; }} = default!;");
             }
 

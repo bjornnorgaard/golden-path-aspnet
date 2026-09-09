@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -26,7 +23,7 @@ public class ServiceRegistrationGenerator : IIncrementalGenerator
                 transform: static (syntaxContext, _) =>
                 {
                     var classDeclaration = (ClassDeclarationSyntax)syntaxContext.TargetNode;
-                    var symbol = syntaxContext.SemanticModel.GetDeclaredSymbol(classDeclaration);
+                    var symbol = syntaxContext.SemanticModel.GetDeclaredSymbol(classDeclaration, _);
                     return symbol;
                 })
             .Where(static s => s != null);

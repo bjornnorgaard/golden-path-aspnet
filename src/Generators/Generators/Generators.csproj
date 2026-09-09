@@ -2,8 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <IsPackable>false</IsPackable>
-        <LangVersion>latest</LangVersion>
 
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <EmitSourceGeneratedFiles>true</EmitSourceGeneratedFiles>
@@ -11,18 +9,23 @@
 
         <RootNamespace>Generators</RootNamespace>
         <PackageId>Generators</PackageId>
+
+        <!-- RS2008 (analyzer release tracking) is meant for analyzer packages published with a version
+             history for external consumers; this generator is only ever consumed in-repo via ProjectReference
+             and is never packed or published. -->
+        <NoWarn>$(NoWarn);RS2008</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
         <!-- Pinned below 5.x: that version's analyzer host is incompatible with the .NET 10 SDK's bundled
              compiler, which silently fails to load this generator and drops all generated types. Re-test
              before bumping. -->
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
-        <PackageReference Include="System.Text.Json" Version="10.0.12" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
+        <PackageReference Include="System.Text.Json"/>
     </ItemGroup>
 
 </Project>
