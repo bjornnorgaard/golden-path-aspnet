@@ -1,21 +1,48 @@
+using System.Linq;
+using HotChocolate.Execution.Processing;
+using HotChocolate.Resolvers;
+using Microsoft.EntityFrameworkCore;
+using WebApi.Configuration;
+using WebApi.Database;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.GraphQl;
 
 namespace WebApi.Features.Todos.GetTodoList;
 
-internal sealed class GetTodoListResolver(GetTodoListHandler handler) : IGetTodoListResolver
+internal sealed class GetTodoListResolver(TodoContext context, PagingOptions paging) : IGetTodoListResolver
 {
-    public async Task<GetTodoListResponse> ResolveAsync(GetTodoListRequest input, CancellationToken ct)
+    public async Task<GetTodoListResponse> ResolveAsync(GetTodoListRequest input, IResolverContext resolverContext, CancellationToken ct)
     {
-        var result = await handler.HandleAsync(new GetTodoListHandler.Command
+        var effectiveLimit = Math.Min(input.Limit ?? paging.DefaultPageSize, paging.MaxPageSize);
+        var effectiveOffset = input.Offset ?? 0;
+
+        var todosSelections = resolverContext.Select("todos");
+        if (todosSelections.Count != 1)
         {
-            Limit = input.Limit,
-            Offset = input.Offset
-        }, ct);
-        
+            throw new InvalidOperationException(
+                $"Expected exactly one selection for the 'todos' field but found {todosSelections.Count}.");
+        }
+
+        var todosSelection = (Selection)todosSelections[0];
+
+        var todos = await context.Todos
+            .AsNoTracking()
+            .OrderBy(todo => todo.Id)
+            .Skip(effectiveOffset)
+            .Take(effectiveLimit)
+            .Select(todo => new GetTodoListItem
+            {
+                Id = todo.Id.Value,
+                Title = todo.Title,
+                DueBy = todo.DueBy,
+                IsComplete = todo.IsComplete
+            })
+            .Select(todosSelection)
+            .ToArrayAsync(ct);
+
         return new GetTodoListResponse
         {
-            Todos = result.Todos
+            Todos = todos
         };
     }
 }

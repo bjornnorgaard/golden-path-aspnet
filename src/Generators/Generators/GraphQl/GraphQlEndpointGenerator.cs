@@ -52,7 +52,14 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             var interfaceName = ResolverInterfaceName(operation);
             sb.AppendLine($"public interface {interfaceName}");
             sb.AppendLine("{");
-            sb.AppendLine($"    global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> ResolveAsync(global::{contractsNamespace}.{operation.RequestType} input, global::System.Threading.CancellationToken ct);");
+            if (operation.OperationType == "Query")
+            {
+                sb.AppendLine($"    global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> ResolveAsync(global::{contractsNamespace}.{operation.RequestType} input, global::HotChocolate.Resolvers.IResolverContext resolverContext, global::System.Threading.CancellationToken ct);");
+            }
+            else
+            {
+                sb.AppendLine($"    global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> ResolveAsync(global::{contractsNamespace}.{operation.RequestType} input, global::System.Threading.CancellationToken ct);");
+            }
             sb.AppendLine("}");
             sb.AppendLine();
         }
@@ -117,8 +124,16 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         foreach (var operation in operations)
         {
             var interfaceName = ResolverInterfaceName(operation);
+            var isQuery = operation.OperationType == "Query";
             sb.AppendLine($"    [global::HotChocolate.GraphQLNameAttribute(\"{operation.Id}\")]");
-            sb.AppendLine($"    public async global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> {ToPascalCase(operation.Id)}Async(global::{contractsNamespace}.{operation.RequestType} input, [global::HotChocolate.ServiceAttribute] {interfaceName} resolver, [global::HotChocolate.ServiceAttribute] global::FluentValidation.IValidator<global::{contractsNamespace}.{operation.RequestType}> validator, global::System.Threading.CancellationToken ct)");
+            if (isQuery)
+            {
+                sb.AppendLine($"    public async global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> {ToPascalCase(operation.Id)}Async(global::{contractsNamespace}.{operation.RequestType} input, [global::HotChocolate.ServiceAttribute] {interfaceName} resolver, [global::HotChocolate.ServiceAttribute] global::FluentValidation.IValidator<global::{contractsNamespace}.{operation.RequestType}> validator, global::HotChocolate.Resolvers.IResolverContext resolverContext, global::System.Threading.CancellationToken ct)");
+            }
+            else
+            {
+                sb.AppendLine($"    public async global::System.Threading.Tasks.Task<global::{contractsNamespace}.{operation.ResponseType}> {ToPascalCase(operation.Id)}Async(global::{contractsNamespace}.{operation.RequestType} input, [global::HotChocolate.ServiceAttribute] {interfaceName} resolver, [global::HotChocolate.ServiceAttribute] global::FluentValidation.IValidator<global::{contractsNamespace}.{operation.RequestType}> validator, global::System.Threading.CancellationToken ct)");
+            }
             sb.AppendLine("    {");
             sb.AppendLine($"        const string operationName = \"graphql.{operation.OperationType.ToLowerInvariant()}.{operation.Id}\";");
             sb.AppendLine("        global::System.Diagnostics.Activity.Current?.SetTag(\"graphql.operation.name\", operationName);");
@@ -130,7 +145,14 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             sb.AppendLine("            {");
             sb.AppendLine("                throw new global::HotChocolate.GraphQLException(string.Join(\"; \", global::System.Linq.Enumerable.Select(validation.Errors, static failure => failure.PropertyName + \": \" + failure.ErrorMessage))); ");
             sb.AppendLine("            }");
-            sb.AppendLine("            return await resolver.ResolveAsync(input, ct);");
+            if (isQuery)
+            {
+                sb.AppendLine("            return await resolver.ResolveAsync(input, resolverContext, ct);");
+            }
+            else
+            {
+                sb.AppendLine("            return await resolver.ResolveAsync(input, ct);");
+            }
             sb.AppendLine("        }");
             sb.AppendLine("        catch (global::System.Exception ex)");
             sb.AppendLine("        {");

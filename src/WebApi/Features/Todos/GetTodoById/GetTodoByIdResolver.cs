@@ -1,28 +1,36 @@
+using HotChocolate.Resolvers;
+using Microsoft.EntityFrameworkCore;
+using WebApi.Database;
 using WebApi.Todos.Contracts;
 using WebApi.Todos.GraphQl;
 using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos.GetTodoById;
 
-internal sealed class GetTodoByIdResolver(GetTodoByIdHandler handler) : IGetTodoByIdResolver
+internal sealed class GetTodoByIdResolver(TodoContext context) : IGetTodoByIdResolver
 {
-    public async Task<GetTodoByIdResponse> ResolveAsync(GetTodoByIdRequest input, CancellationToken ct)
+    public async Task<GetTodoByIdResponse> ResolveAsync(GetTodoByIdRequest input, IResolverContext resolverContext, CancellationToken ct)
     {
-        var result = await handler.HandleAsync(new GetTodoByIdHandler.Command
-        {
-            Id = TodoId.MustParse(input.Id)
-        }, ct);
+        var id = TodoId.MustParse(input.Id);
+
+        var result = await context.Todos
+            .AsNoTracking()
+            .Where(todo => todo.Id == id)
+            .Select(todo => new GetTodoByIdResponse
+            {
+                Id = todo.Id.Value,
+                Title = todo.Title,
+                DueBy = todo.DueBy,
+                IsComplete = todo.IsComplete
+            })
+            .Select(resolverContext.Selection)
+            .FirstOrDefaultAsync(ct);
+        
         if (result is null)
         {
             throw new HotChocolate.GraphQLException("Todo was not found.");
         }
 
-        return new GetTodoByIdResponse
-        {
-            Id = result.Id.Value,
-            Title = result.Title,
-            DueBy = result.DueBy,
-            IsComplete = result.IsComplete
-        };
+        return result;
     }
 }
