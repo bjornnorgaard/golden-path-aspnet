@@ -23,7 +23,7 @@ This repository is a .NET 10 ASP.NET Core minimal API reference application. It 
 ```bash
 dotnet restore src/GoldenPathAspnet.slnx
 dotnet build src/GoldenPathAspnet.slnx --no-restore
-dotnet test src/GoldenPathAspnet.slnx --no-build
+dotnet test --solution src/GoldenPathAspnet.slnx --no-build
 dotnet run --project src/WebApi/WebApi.csproj
 dotnet tool restore --tool-manifest src/.config/dotnet-tools.json
 ```
