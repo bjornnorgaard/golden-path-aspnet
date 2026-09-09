@@ -10,9 +10,12 @@ public static class HealthChecksConfiguration
 
     extension(WebApplicationBuilder builder)
     {
-        public void AddPlatformHealthChecks() =>
-            builder.Services.AddHealthChecks()
+        public void AddPlatformHealthChecks()
+        {
+            builder.Services
+                .AddHealthChecks()
                 .AddCheck<DatabaseHealthCheck>("database", tags: [ReadyTag]);
+        }
     }
 
     extension(WebApplication app)
@@ -36,9 +39,15 @@ public static class HealthChecksConfiguration
 
     private sealed class DatabaseHealthCheck(TodoContext dbContext) : IHealthCheck
     {
-        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken ct = default) =>
-            await dbContext.Database.CanConnectAsync(ct)
-                ? HealthCheckResult.Healthy()
-                : HealthCheckResult.Unhealthy("Unable to connect to the database.");
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken ct = default)
+        {
+            var canConnect = await dbContext.Database.CanConnectAsync(ct);
+            if (canConnect)
+            {
+                return HealthCheckResult.Healthy();
+            }
+
+            return HealthCheckResult.Unhealthy("Unable to connect to the database.");
+        }
     }
 }
