@@ -11,6 +11,7 @@ builder.RegisterGeneratedServices();
 builder.AddPlatformTelemetry();
 builder.AddPlatformHangfire();
 builder.AddDatabase();
+builder.AddPlatformHealthChecks();
 
 var app = builder.Build();
 app.UsePlatformExceptionHandling();
@@ -20,5 +21,6 @@ app.MapGeneratedGraphQlPlayground();
 app.UsePlatformHangfire();
 app.MapPlatformOpenApi();
 app.UseDatabase();
+app.MapPlatformHealthChecks();
 
 app.Run();

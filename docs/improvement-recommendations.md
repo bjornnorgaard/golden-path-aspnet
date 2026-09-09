@@ -12,7 +12,7 @@ Gaps identified in the current reference app, grouped by area. Priority order: a
 
 ## Reliability
 
-- [ ] No health check endpoints (`/health`, `/health/ready`) — add via `AddHealthChecks().AddNpgSql(...)` so orchestrators can probe the app.
+- [x] No health check endpoints (`/health`, `/health/ready`) — add via `AddHealthChecks().AddNpgSql(...)` so orchestrators can probe the app.
 - [ ] No resilience policies around outbound calls (Hangfire jobs, DB) — `Microsoft.Extensions.Http.Resilience` (Polly-based, MS-supported) fits the AOT-friendly, source-generator-heavy style already used here.
 
 ## CI/CD
