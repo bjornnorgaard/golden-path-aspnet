@@ -17,7 +17,9 @@ Gaps identified in the current reference app, grouped by area. Priority order: a
 
 ## CI/CD
 
-- [ ] `.github/workflows/build-and-test.yml` has no NuGet caching (`actions/setup-dotnet` supports `cache: true`), no code coverage collection/upload, and no Dependabot config for keeping the pinned packages in `src/Directory.Packages.props` current.
+- [x] `.github/workflows/build-and-test.yml` has no NuGet caching (`actions/setup-dotnet` supports `cache: true`).
+- [ ] No code coverage collection/upload in CI.
+- [ ] No Dependabot config for keeping the pinned packages in `src/Directory.Packages.props` current.
 - [ ] No CodeQL/security scanning workflow.
 - [ ] No workflow step builds/publishes the Docker image, even though `src/WebApi/Dockerfile` exists — add a `docker build` smoke-test job at minimum.
 
