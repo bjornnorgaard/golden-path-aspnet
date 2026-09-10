@@ -8,10 +8,11 @@ namespace WebApi.Configurations;
 
 /// <summary>
 /// Locks the whole service behind GitHub login: nothing carries [AllowAnonymous] except /login,
-/// /logout and /access-denied, so the fallback policy below requires an authenticated session for
-/// every other request - REST endpoints, GraphQL, the Hangfire dashboard, and the Scalar/OpenAPI docs
-/// alike. Authentication only proves who someone is, so GitHub's OAuth ticket is additionally rejected
-/// in <c>OnCreatingTicket</c> for anyone other than the configured <c>Authentication:AllowedGitHubLogin</c>.
+/// /logout, /access-denied, and the health checks (see HealthCheckConfiguration), so the fallback
+/// policy below requires an authenticated session for every other request - REST endpoints, GraphQL,
+/// the Hangfire dashboard, and the Scalar/OpenAPI docs alike. Authentication only proves who someone
+/// is, so GitHub's OAuth ticket is additionally rejected in <c>OnCreatingTicket</c> for anyone other
+/// than the configured <c>Authentication:AllowedGitHubLogin</c>.
 /// </summary>
 public static class AuthenticationConfiguration
 {

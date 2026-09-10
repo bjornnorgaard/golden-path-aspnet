@@ -56,6 +56,10 @@ Run `dotnet format` only when intentionally applying repository-wide formatting;
 - Use `aspire logs <resource>` when the application is managed by an Aspire AppHost; otherwise use the `aspire otel` commands above for this repository's Compose-based dashboard.
 - Use `aspire export --dashboard-url http://localhost:18888` to save a zip snapshot of the current telemetry for offline inspection or sharing.
 
+## Deployment (Mimir)
+
+This repo is being onboarded onto the operator's Kubernetes homelab platform, "Mimir." Work through [deploy/mimir/ONBOARDING.md](deploy/mimir/ONBOARDING.md) for the current onboarding steps and status.
+
 ## Change hygiene
 
 - Keep changes scoped to the requested behavior.

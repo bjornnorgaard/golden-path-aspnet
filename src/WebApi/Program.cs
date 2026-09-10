@@ -7,22 +7,22 @@ builder.AddPlatformExceptionHandling();
 builder.AddPlatformCors();
 builder.AddWebApiGeneratedConfiguration();
 builder.AddGeneratedTransportLayers();
-builder.RegisterGeneratedServices();
-builder.AddPlatformTelemetry();
 builder.AddPlatformAuthentication();
+builder.RegisterGeneratedServices();
+builder.AddPlatformHealthChecks();
+builder.AddPlatformTelemetry();
 builder.AddPlatformHangfire();
 builder.AddDatabase();
-builder.AddPlatformHealthChecks();
 
 var app = builder.Build();
 app.UsePlatformExceptionHandling();
 app.UsePlatformCors();
 app.UsePlatformAuthentication();
-app.MapGeneratedTransportLayers();
 app.MapGeneratedGraphQlPlayground();
+app.MapGeneratedTransportLayers();
+app.UsePlatformHealthChecks();
 app.UsePlatformHangfire();
 app.MapPlatformOpenApi();
 app.UseDatabase();
-app.MapPlatformHealthChecks();
 
 app.Run();

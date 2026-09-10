@@ -74,15 +74,32 @@ public sealed class RouteAuthorizationTests : TestBase
     [Arguments("GET", "/login")]
     [Arguments("POST", "/logout")]
     [Arguments("GET", "/access-denied")]
+    [Arguments("GET", "/health/live")]
+    [Arguments("GET", "/health/ready")]
     public async Task PublicRoute_WithoutAuthentication_IsNotBlockedByAuthorization(string method, string path)
     {
-        // Act: these three routes exist specifically so a caller can reach them before having a
-        // session, so they must stay reachable with no authentication at all.
+        // Act: these routes exist specifically so a caller can reach them before having a session
+        // (or, for the health checks, without ever having one), so they must stay reachable with no
+        // authentication at all.
         var response = await AnonymousClient.SendAsync(BuildRequest(method, path));
 
-        // Assert: never 401 - each route's own logic decides its status (a redirect, or a 403 body
-        // for /access-denied), but the authorization middleware itself must never intervene.
+        // Assert: never 401 - each route's own logic decides its status (a redirect, a 403 body for
+        // /access-denied, or a health result), but the authorization middleware itself must never
+        // intervene.
         await Assert.That(response.StatusCode).IsNotEqualTo(HttpStatusCode.Unauthorized);
+    }
+
+    [Test]
+    [Arguments("/health/live")]
+    [Arguments("/health/ready")]
+    public async Task HealthCheck_WithoutAuthentication_ReturnsHealthy(string path)
+    {
+        // Act: an orchestrator's probe has no session and must never be asked to authenticate - it
+        // needs a plain 2xx to consider the instance live/ready.
+        var response = await AnonymousClient.SendAsync(BuildRequest("GET", path));
+
+        // Assert
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
     }
 
     private static HttpRequestMessage BuildRequest(string method, string path)
