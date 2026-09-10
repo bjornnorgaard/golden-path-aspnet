@@ -7,6 +7,7 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+COPY ["Directory.Build.props", "Directory.Packages.props", "./"]
 COPY ["WebApi/WebApi.csproj", "WebApi/"]
 COPY ["Generators/Generators/Generators.csproj", "Generators/Generators/"]
 RUN dotnet restore "WebApi/WebApi.csproj"
