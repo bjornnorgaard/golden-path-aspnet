@@ -14,7 +14,7 @@ dependencies:
 services:
   webapi:
     image:
-      tag: "26.09.10-13.16-073a63d"    # promote workflow (production.yml) overwrites this — never hand-edit after first sync
+      tag: "26.09.10-16.03-8e289ed"    # promote workflow (production.yml) overwrites this — never hand-edit after first sync
     ports:
       - name: http
         containerPort: 8080
