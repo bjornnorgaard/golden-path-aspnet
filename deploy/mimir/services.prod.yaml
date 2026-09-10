@@ -6,6 +6,10 @@ dependencies:
       webapi:
         connectionEnv: ConnectionStrings__DefaultConnection
         canMigrate: true
+  telemetry:
+    consumers:
+      webapi:
+        endpointEnv: Telemetry__CollectorEndpoint   # operator injects the collector URL under this name
 
 services:
   webapi:
@@ -22,8 +26,6 @@ services:
         path: /health/live
       readiness:
         path: /health/ready
-    otel:
-      endpointEnv: Telemetry__CollectorEndpoint   # operator injects the collector URL under this name
     env:
       - name: Telemetry__ServiceName
         value: golden-path-aspnet
