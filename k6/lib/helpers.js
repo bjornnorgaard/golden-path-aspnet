@@ -14,6 +14,21 @@ export const BASE_URL = __ENV.BASE_URL || 'https://golden-path-aspnet.bybear.dk'
 // Not needed for local runs against an unauthenticated dev instance.
 const AUTH_COOKIE = __ENV.AUTH_COOKIE || '';
 
+// Fail fast and loud instead of silently 401ing on every request: a missing
+// AUTH_COOKIE against a non-local BASE_URL is almost always someone forgetting
+// to export it into the shell (e.g. running `source k6/.env` instead of
+// `set -a; source k6/.env; set +a`), not an actual test condition worth
+// discovering 60 seconds later via a 100% failure rate.
+const IS_LOCAL_TARGET = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(BASE_URL);
+if (!IS_LOCAL_TARGET && !AUTH_COOKIE) {
+  throw new Error(
+    `AUTH_COOKIE is not set, but BASE_URL (${BASE_URL}) is not local — every route on this ` +
+    'app is behind GitHub OAuth, so requests would just 401. Run: ' +
+    '`set -a; source k6/.env; set +a` (populating AUTH_COOKIE there first if you haven\'t) ' +
+    'before `k6 run`, or set BASE_URL to a local instance instead.'
+  );
+}
+
 const JSON_HEADERS = {
   headers: {
     'Content-Type': 'application/json',
