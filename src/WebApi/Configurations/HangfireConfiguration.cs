@@ -50,9 +50,9 @@ public static class HangfireConfiguration
 
             if (hangfireOptions.DashboardEnabled)
             {
-                // No authorization filter: this is a reference template running behind trusted
-                // networking, not a hardened default. Add a real IDashboardAuthorizationFilter
-                // before exposing this publicly.
+                // No Hangfire-specific authorization filter: the dashboard is mapped as a regular
+                // endpoint, so the global fallback policy (see AuthenticationConfiguration) already
+                // requires an authenticated, allow-listed GitHub login before this is reachable.
                 app.MapHangfireDashboard(new DashboardOptions
                 {
                     Authorization = []

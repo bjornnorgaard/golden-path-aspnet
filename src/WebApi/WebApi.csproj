@@ -5,9 +5,11 @@
         <HotChocolateImplicitUsings>disable</HotChocolateImplicitUsings>
         <InvariantGlobalization>true</InvariantGlobalization>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <UserSecretsId>d3a6a5c4-3f2e-4b7a-9c1d-6e8f2a0b5c7d</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="AspNet.Security.OAuth.GitHub"/>
         <PackageReference Include="FluentValidation"/>
         <PackageReference Include="Hangfire.AspNetCore"/>
         <PackageReference Include="Hangfire.PostgreSql"/>
