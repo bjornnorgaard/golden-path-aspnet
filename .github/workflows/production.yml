@@ -1,0 +1,30 @@
+name: Production
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  pin:
+    name: Pin production to test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    # Optional but recommended: a GitHub Environment named "Production" gives
+    # you required reviewers / wait timers with no extra code, and shows the
+    # deployed URL on the run. Configure under repo Settings → Environments;
+    # remove this block if you don't want the gate yet.
+    environment:
+      name: Production
+      # url: https://golden-path-aspnet.bybear.dk   # fill in once the operator confirms
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Copy test image tag onto production
+        run: .github/scripts/copy-test-tags-to-production.sh webapi

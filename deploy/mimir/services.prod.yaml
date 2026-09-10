@@ -1,0 +1,33 @@
+dependencies:
+  postgres:
+    databaseName: golden_path_aspnet
+    migrations: startup
+    consumers:
+      webapi:
+        connectionEnv: ConnectionStrings__DefaultConnection
+        canMigrate: true
+
+services:
+  webapi:
+    image:
+      tag: "initial"    # promote workflow (production.yml) overwrites this — never hand-edit after first sync
+    ports:
+      - name: http
+        containerPort: 8080
+        servicePort: 80
+        visibility: internet
+    probes:
+      port: http
+      liveness:
+        path: /health/live
+      readiness:
+        path: /health/ready
+    env:
+      - name: Telemetry__CollectorEndpoint
+        value: http://otel-collector.otel.svc.cluster.local:4317
+      - name: Telemetry__ServiceName
+        value: golden-path-aspnet
+      - name: Authentication__AllowedGitHubLogin
+        value: "bjornnorgaard"
+      # ConnectionStrings__DefaultConnection, Authentication__GitHub__ClientId,
+      # Authentication__GitHub__ClientSecret — operator injects as secrets, do not add here
