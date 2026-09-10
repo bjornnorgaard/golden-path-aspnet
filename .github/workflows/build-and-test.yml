@@ -3,8 +3,13 @@ name: Build and test
 on:
   push:
     branches: [main]
+    paths: &paths
+      - "src/**"
+      - ".github/workflows/build-and-test.yml"
+      - ".github/scripts/**"
   pull_request:
     branches: [main]
+    paths: *paths
 
 concurrency:
   group: build-and-test-${{ github.event.pull_request.number || github.ref }}
