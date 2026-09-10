@@ -1,9 +1,25 @@
 // Shared helpers for the k6 scripts in this folder.
 // Kept dependency-free (no external k6 modules) so scripts run offline.
 
-export const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+// Defaults to the deployed production instance. Override with BASE_URL, e.g.
+// BASE_URL=http://localhost:8080 k6 run k6/rest-api.js to go back to a local run.
+export const BASE_URL = __ENV.BASE_URL || 'https://golden-path-aspnet.bybear.dk';
 
-const JSON_HEADERS = { headers: { 'Content-Type': 'application/json' } };
+// Every route except /login, /logout, /access-denied, /healthz, and /readyz sits
+// behind GitHub OAuth (see AuthenticationConfiguration.cs), so hitting a deployed
+// environment needs an authenticated session cookie — there's no API-key/service
+// path today. Extract the `.AspNetCore.Cookies` value from a browser session
+// that's already logged in via GitHub, then set AUTH_COOKIE=".AspNetCore.Cookies=<value>"
+// (e.g. in a gitignored k6/.env, `set -a; source k6/.env; set +a` before `k6 run`).
+// Not needed for local runs against an unauthenticated dev instance.
+const AUTH_COOKIE = __ENV.AUTH_COOKIE || '';
+
+const JSON_HEADERS = {
+  headers: {
+    'Content-Type': 'application/json',
+    ...(AUTH_COOKIE ? { Cookie: AUTH_COOKIE } : {}),
+  },
+};
 
 export function jsonHeaders() {
   return JSON_HEADERS;

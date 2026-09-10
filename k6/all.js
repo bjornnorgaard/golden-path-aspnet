@@ -13,9 +13,8 @@ export const options = {
     rest_api: {
       executor: 'ramping-vus',
       exec: 'restApi',
-      startVUs: 0,
+      startVUs: 1,
       stages: [
-        { duration: '10s', target: 1 },
         { duration: '10s', target: 2 },
         { duration: '10s', target: 4 },
         { duration: '10s', target: 8 },
@@ -27,9 +26,8 @@ export const options = {
     graphql_api: {
       executor: 'ramping-vus',
       exec: 'graphqlApi',
-      startVUs: 0,
+      startVUs: 1,
       stages: [
-        { duration: '10s', target: 1 },
         { duration: '10s', target: 2 },
         { duration: '10s', target: 4 },
         { duration: '10s', target: 8 },

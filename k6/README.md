@@ -30,21 +30,49 @@ ramp.
 ## Prerequisites
 
 - [k6](https://k6.io) installed locally (`k6 version` to check).
-- The WebApi running and reachable, e.g. via `docker compose up` from the repo
-  root, or `dotnet run --project src/WebApi/WebApi.csproj`.
+- A target to run against — either the WebApi running locally (e.g. via
+  `docker compose up` from the repo root, or
+  `dotnet run --project src/WebApi/WebApi.csproj`), or a deployed environment
+  (see "Running against a deployed environment" below).
 
 ## Running
 
 ```bash
-# Defaults to http://localhost:8080 (the compose.yaml port mapping)
+# Defaults to the deployed production instance (golden-path-aspnet.bybear.dk).
 # Run these from the repo root so results land in k6/results/.
 k6 run k6/rest-api.js
 k6 run k6/graphql-api.js
 k6 run k6/all.js
 
-# Point at a different host/port
-BASE_URL=http://localhost:5000 k6 run k6/rest-api.js
+# Point at a different host/port, e.g. a local run
+BASE_URL=http://localhost:8080 k6 run k6/rest-api.js
 ```
+
+### Running against a deployed environment
+
+Production and test both sit entirely behind GitHub OAuth (see
+`AuthenticationConfiguration.cs`) — every route except `/login`, `/logout`,
+`/access-denied`, `/healthz`, and `/readyz` requires an authenticated session
+cookie, and there's no API key or service-account path. Since these
+benchmarks only run occasionally, the simplest option is a static, manually
+refreshed cookie rather than adding a whole separate auth scheme:
+
+1. Log into the target environment in a browser (GitHub OAuth login,
+   allowlisted to your account).
+2. In dev tools, copy the `.AspNetCore.Cookies` cookie value.
+3. Put it in a gitignored `k6/.env` (see `k6/.env` — already set up and
+   excluded by `.gitignore`/`k6/.gitignore`):
+   ```
+   AUTH_COOKIE=.AspNetCore.Cookies=<value>
+   ```
+4. `set -a; source k6/.env; set +a` before `k6 run` so `AUTH_COOKIE` is in
+   the environment.
+
+The cookie is a 14-day session; once it expires (or the session is revoked)
+requests will start hitting `/login` redirects instead of the API, and you'll
+need to repeat steps 1–4 with a fresh value. To go back to a local,
+unauthenticated target, just override `BASE_URL` (see above) — `AUTH_COOKIE`
+is simply ignored when the target doesn't require it.
 
 ## Results and regression comparison
 
