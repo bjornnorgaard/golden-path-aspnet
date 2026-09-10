@@ -1,22 +1,4 @@
 services:
-  webapi:
-    image: golden-path-aspnet-webapi
-    build:
-      context: ./src
-      dockerfile: WebApi/Dockerfile
-    environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Database=golden-path;Username=golden-user;Password=golden-pass
-      Telemetry__CollectorEndpoint: http://collector:4317
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      collector:
-        condition: service_started
-
   postgres:
     image: postgres:18-alpine
     environment:
