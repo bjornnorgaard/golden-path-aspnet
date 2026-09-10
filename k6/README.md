@@ -20,10 +20,12 @@ and throughput.
 - `results/` — Markdown and JSON summaries written by each run (git-ignored);
   see below.
 
-Each script ramps from 0 to 10 virtual users over ~30 seconds total (20 VUs
-combined in `all.js`, since REST and GraphQL scenarios run concurrently),
-which is enough to stress the app meaningfully while still finishing in under
-a minute.
+Each script steps up virtual users by doubling every 10 seconds — 1, 2, 4, 8,
+16 (32 VUs combined in `all.js`, since REST and GraphQL scenarios run
+concurrently) — then winds down to 0 over the final 10 seconds, 60 seconds
+total. The stepped, doubling ramp makes each load level visible as a distinct
+plateau in graphs (e.g. Grafana/production dashboards), rather than a smooth
+ramp.
 
 ## Prerequisites
 
