@@ -1,5 +1,64 @@
 # golden-path-aspnet
 
+A .NET 10 ASP.NET Core minimal API reference application — a "golden path" showing how a
+production-shaped service fits together: source-generated endpoint/service/config registration,
+REST and GraphQL over the same feature handlers, EF Core on PostgreSQL, background jobs, OpenTelemetry,
+and GitHub-based auth in front of all of it.
+
+The example domain is a small Todo API (create/get/list/update/toggle/delete, plus scheduled
+reminder and sweep jobs), which exists to exercise the plumbing rather than as a feature in itself.
+
+## Architecture
+
+- `src/WebApi` — the application: feature handlers, database context and migrations, JSON
+  configuration, and startup wiring. Endpoints, services, configuration, and telemetry are
+  registered via Roslyn source generators rather than hand-written `Startup`/`Program` boilerplate.
+- `src/WebApi.Platform` — reusable cross-cutting setup (telemetry, OpenAPI, exception handling)
+  shared by the application.
+- `src/Generators/Generators` — the source generators consumed as analyzers by the projects above.
+- `src/WebApi.Tests` — TUnit integration tests that run the API in-memory against a real
+  PostgreSQL via Testcontainers, exercised through its public HTTP interface.
+- `src/Benchmarks` — BenchmarkDotNet microbenchmarks.
+- `k6/` — k6 load tests for the REST and GraphQL transports, used to catch performance regressions
+  (see [k6/README.md](k6/README.md)).
+- `deploy/mimir` — manifests and notes for deploying this service to the operator's Kubernetes
+  homelab platform ("Mimir"); see [deploy/mimir/ONBOARDING.md](deploy/mimir/ONBOARDING.md).
+
+Each feature (e.g. `src/WebApi/Features/Todos/CreateTodo`) is a self-contained vertical slice:
+request/response DTOs, a FluentValidation validator, and a handler exposed over both REST and
+GraphQL from the same code.
+
+Every request — REST endpoints, GraphQL, the Hangfire dashboard, and the Scalar/OpenAPI docs —
+requires a GitHub login, as described below.
+
+## Running locally
+
+`compose.yaml` runs the app's dependencies only (Postgres, the OTel collector, the Aspire
+dashboard) — the app itself runs on the host:
+
+```bash
+docker compose up -d
+dotnet run --project src/WebApi
+```
+
+The app listens on `http://localhost:5200` by default. The Aspire dashboard (logs/traces/spans) is
+at `http://localhost:18888`.
+
+Complete the [GitHub OAuth App setup](#one-time-setup-register-a-github-oauth-app) below before
+logging in for the first time.
+
+### Common commands
+
+```bash
+dotnet restore src/GoldenPathAspnet.slnx
+dotnet build src/GoldenPathAspnet.slnx --no-restore
+dotnet test --solution src/GoldenPathAspnet.slnx --no-build
+dotnet run --project src/WebApi/WebApi.csproj
+```
+
+Integration tests require Docker (Testcontainers starts PostgreSQL for them). See
+[AGENTS.md](AGENTS.md) for fuller contributor conventions.
+
 ## Authentication
 
 Every request into the service — REST endpoints, GraphQL, the Hangfire dashboard, and the
