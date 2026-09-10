@@ -3,6 +3,7 @@ using WebApi.Todos;
 using WebApi.Todos.GraphQl;
 
 var builder = WebApplication.CreateSlimBuilder(args);
+builder.AddPlatformForwardedHeaders();
 builder.AddPlatformExceptionHandling();
 builder.AddPlatformCors();
 builder.AddWebApiGeneratedConfiguration();
@@ -15,6 +16,7 @@ builder.AddPlatformHangfire();
 builder.AddDatabase();
 
 var app = builder.Build();
+app.UsePlatformForwardedHeaders();
 app.UsePlatformExceptionHandling();
 app.UsePlatformCors();
 app.UsePlatformAuthentication();
