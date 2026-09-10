@@ -21,8 +21,8 @@ reminder and sweep jobs), which exists to exercise the plumbing rather than as a
 - `src/Benchmarks` — BenchmarkDotNet microbenchmarks.
 - `k6/` — k6 load tests for the REST and GraphQL transports, used to catch performance regressions
   (see [k6/README.md](k6/README.md)).
-- `deploy/mimir` — manifests and notes for deploying this service to the operator's Kubernetes
-  homelab platform ("Mimir"); see [deploy/mimir/ONBOARDING.md](deploy/mimir/ONBOARDING.md).
+- `deploy/mimir` — deployment manifests for the operator's Kubernetes homelab platform ("Mimir"),
+  which this service runs on.
 
 Each feature (e.g. `src/WebApi/Features/Todos/CreateTodo`) is a self-contained vertical slice:
 request/response DTOs, a FluentValidation validator, and a handler exposed over both REST and

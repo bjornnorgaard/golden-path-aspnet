@@ -58,7 +58,7 @@ Run `dotnet format` only when intentionally applying repository-wide formatting;
 
 ## Deployment (Mimir)
 
-This repo is being onboarded onto the operator's Kubernetes homelab platform, "Mimir." Work through [deploy/mimir/ONBOARDING.md](deploy/mimir/ONBOARDING.md) for the current onboarding steps and status.
+This repo runs on the operator's Kubernetes homelab platform, "Mimir." Deployment manifests live in `deploy/mimir` (`services.test.yaml`, `services.prod.yaml`).
 
 ## Change hygiene
 
