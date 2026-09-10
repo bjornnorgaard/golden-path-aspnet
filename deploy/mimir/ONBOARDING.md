@@ -18,7 +18,6 @@ Both are `.AllowAnonymous()`, explicitly carved out of the global GitHub-auth fa
 ## 1. Tooling check
 
 - **`gh` CLI:** `gh --version`. If missing, install from <https://cli.github.com/> then `gh auth login`. Stop and ask the human operating this session to do this if you cannot install software yourself.
-- **Auth scope:** `gh auth status`. You need a token that can manage webhooks on **this** repo (`admin:repo_hook`, or repo admin). If `gh auth status` shows insufficient scope: `gh auth refresh -h github.com -s admin:repo_hook`.
 - Confirm visibility yourself rather than trusting a stale value here: `gh repo view --json visibility -q .visibility`.
 
 ## 2. Visibility and image pulls
@@ -27,49 +26,9 @@ This repo is **public** — Argo clones over plain HTTPS, no deploy key needed.
 
 **GHCR image pulls:** decided **public** package — the cluster pulls with no secret at all. Set the package to public once it exists (repo **Packages** tab → package **Settings** → Change visibility) — it inherits repo visibility by default on first publish from a public repo, but double check once CI has pushed the first image.
 
-## 3. Create the Argo CD webhook (you can do this yourself)
+## 3. Argo CD webhook — operator's job, not yours
 
-Every `push` should hit Argo CD's webhook so tag bumps in `deploy/mimir/services.*.yaml` sync within seconds instead of waiting on the polling interval. One shared secret is used for all repos onboarded to Mimir — it is **not** something you generate; read it from a sibling `mimir` checkout via SOPS, or ask the operator to send it over a secure channel (never git/email/chat).
-
-```bash
-# From this repo's root
-REPO="bjornnorgaard/golden-path-aspnet"
-MIMIR_ROOT="${MIMIR_ROOT:-../mimir}"   # sibling checkout, if you have one
-
-# Skip if the webhook already exists
-EXISTING=$(gh api "repos/${REPO}/hooks" \
-  --jq '.[] | select(.config.url == "https://argocd.bybear.dk/api/webhook") | .id' \
-  | head -n1)
-if [[ -n "${EXISTING}" ]]; then
-  echo "Argo webhook already present (id=${EXISTING}) — nothing to do."
-  exit 0
-fi
-
-export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$HOME/.config/mimir/age/key.txt}"
-WH=$(sops -d "${MIMIR_ROOT}/gitops/secrets/argocd/webhook-github.sops.yaml" \
-  | yq -r '.stringData["webhook.github.secret"]')
-
-# No sibling mimir checkout / no SOPS access? Ask the operator to send the
-# secret over a secure channel instead, then: WH="<value they sent>"
-
-gh api "repos/${REPO}/hooks" \
-  -f name=web \
-  -F active=true \
-  -f 'events[]=push' \
-  -f config[url]=https://argocd.bybear.dk/api/webhook \
-  -f config[content_type]=json \
-  -f config[secret]="$WH"
-
-unset WH
-```
-
-Use **`-F active=true`** (capital F) — `-f active=true` sends a string and GitHub returns HTTP 422.
-
-**Verify:**
-
-```bash
-gh api "repos/${REPO}/hooks" --jq '.[] | select(.config.url == "https://argocd.bybear.dk/api/webhook") | {id, active, events}'
-```
+Skip this one. This repo and the operator's `mimir` repo are owned by the same GitHub account (`bjornnorgaard`), so per the operator's own split of responsibility, the operator creates this webhook directly rather than handing you the shared secret. Nothing to do here.
 
 ## 4. Write the deploy manifest
 
@@ -80,7 +39,7 @@ Single component, service key **`webapi`**. Create **`deploy/mimir/services.test
 ```yaml
 dependencies:
   postgres:
-    databaseName: golden-path-aspnet
+    databaseName: golden_path_aspnet
     migrations: startup
     consumers:
       webapi:
@@ -108,10 +67,12 @@ services:
       - name: Telemetry__ServiceName
         value: golden-path-aspnet-test
       - name: Authentication__AllowedGitHubLogin
-        value: "<your-github-username>"   # fill in — the one GitHub account allowed to log in
+        value: "bjornnorgaard"
       # ConnectionStrings__DefaultConnection, Authentication__GitHub__ClientId,
       # Authentication__GitHub__ClientSecret — operator injects as secrets, do not add here
 ```
+
+Test hostname is now confirmed: **`golden-path-aspnet-test.bybear.dk`** — Gateway listener, cert, and the operator's workload values are already set up around it on the mimir side. You don't need to put it anywhere in this manifest; it's wired in via the operator's own values file.
 
 Notes specific to this app (do not copy these blindly from another repo's manifest):
 
@@ -121,11 +82,15 @@ Notes specific to this app (do not copy these blindly from another repo's manife
 
 ### CI (test only, single component)
 
-- One `.github/workflows/webapi.yml`, from [`service.yml.example`](../../../mimir/gitops/templates/github/workflows/service.yml.example) (path relative to a sibling `mimir` checkout — copy the template content, don't symlink). `{{SERVICE_NAME}}` → `webapi`, `{{SERVICE_PATH}}` → `src/WebApi`, `{{SERVICE_KEY}}` → `webapi`. PR: build + test (`dotnet build` / `dotnet test` against `src/GoldenPathAspnet.slnx`, per `AGENTS.md` — needs Docker available for Testcontainers-based integration tests). Push to `main`: build + test → image → GHCR → pin the new tag into `deploy/mimir/services.test.yaml`.
-- Helper scripts from `gitops/templates/github/scripts/` → `.github/scripts/` (generic, copy as-is, no edits, `chmod +x`).
-- No `production.yml` yet — add it when the operator asks for prod.
+You already have `.github/workflows/build-and-test.yml` (build + test on push/PR). Extend the same pattern with image build/push/pin rather than starting from the generic template — you already know this repo's actual build steps (`global-json-file`, `Directory.Packages.props` cache path, `--solution` flag on `dotnet test`) better than a generic placeholder would guess. Add, after the existing test job:
 
-Only the build/test step in `service.yml.example` needs stack-specific content (`dotnet restore/build/test src/GoldenPathAspnet.slnx`, .NET 10 SDK via `actions/setup-dotnet`); everything else should work unmodified.
+- **Image job** (`if: github.event_name != 'pull_request'`): build and push to `ghcr.io/bjornnorgaard/golden-path-aspnet`.
+  - **Docker build context is `./src`, not `./src/WebApi`** — check the Dockerfile: its `COPY ["WebApi/WebApi.csproj", "WebApi/"]` etc. are relative to `src/`, and it also needs `Generators/Generators.csproj` as a sibling. `dockerfile: WebApi/Dockerfile` (or the equivalent relative path) with `context: ./src`.
+  - Tag with the same `yy.mm.dd-HH.MM-shortsha` scheme as [`image-tag.sh.example`](../../../mimir/gitops/templates/github/scripts/image-tag.sh.example) in the operator's repo (or invent your own — just keep it unique per push, e.g. `${{ github.sha }}` short form is fine too).
+- **Pin job**: write the new tag into `deploy/mimir/services.test.yaml` under `services.webapi.image.tag` and push to `main` (`[skip ci]`, retry on push conflict — see [`pin-test-and-push.sh.example`](../../../mimir/gitops/templates/github/scripts/pin-test-and-push.sh.example) for the exact retry pattern if you want to copy it as-is rather than reinvent it).
+- No `production.yml` yet — test only, per the operator's current request.
+
+GHCR package: **public** (decided) — no pull secret needed once you set the package's own visibility to public after the first push (Packages tab → package Settings).
 
 Field reference and rules (secrets, hostnames, Postgres shape, environments) if anything above needs more context: `app-developer-onboarding.md` § Manifest shape.
 
@@ -147,35 +112,21 @@ Already enabled in code and requires the explicit env vars set in §4 above (`Te
 
 Stateless replicas with `replicaCount: 1` (the operator's likely default for a first test deploy) do **not** get rescheduled immediately when their node goes unreachable — expect no healthy pod for up to ~5 minutes (Kubernetes' default pod-eviction grace period) until the platform evicts and reschedules it. Not something to fix in this repo; flagging so it's not mistaken for a bug during test verification.
 
-## 6. GitHub OAuth App — new registration needed (manual, outside GitOps)
+## 6. GitHub OAuth App — done
 
-The existing GitHub OAuth App (used for local dev, per [`README.md`](../../README.md)) has a callback URL for local dev only. This deployment needs its **own** OAuth App (or an additional callback URL on the same one — your choice) registered with the real deployed callback URL:
-
-```
-https://<operator-assigned-test-hostname>/auth/callback/github
-```
-
-(`CallbackPath = "/auth/callback/github"` confirmed in [`AuthenticationConfiguration.cs:37`](../../src/WebApi/Configurations/AuthenticationConfiguration.cs).) This is a manual, one-time step in GitHub's own UI — not something GitOps or CI does for you. Once registered, send the operator (over a secure channel, never git/email/chat):
-
-- `Authentication__GitHub__ClientId`
-- `Authentication__GitHub__ClientSecret`
-
-The operator confirms the actual test hostname (§7) before you register the callback URL — don't guess it.
+**Resolved.** The deployed OAuth App is registered with callback `https://golden-path-aspnet-test.bybear.dk/auth/callback/github`, and the operator already has the client ID/secret stored (encrypted, SOPS) and wired into the workload's `secretEnv`. Nothing left to do here.
 
 ## 7. Self-check
 
 - [x] §0: `/health/live` and `/health/ready` exist, are excluded from the GitHub-auth fallback policy, and return 2xx with no auth
-- [ ] `gh auth status` has enough scope; visibility confirmed public
+- [x] §3: Argo CD webhook — operator's job, not yours, nothing to check here
+- [x] §6: GitHub OAuth App registered and secrets already with the operator
 - [ ] GHCR package set to public once first image is pushed
-- [ ] Argo CD webhook created on this repo (§3) and verified
-- [ ] `deploy/mimir/services.test.yaml` committed (§4) — includes the two `Telemetry__*` env vars, not relying on platform auto-injection
-- [ ] `.github/workflows/webapi.yml` committed — builds/tests `src/GoldenPathAspnet.slnx`, pushes to GHCR, bumps `services.test.yaml` tag on `main` only
+- [ ] `deploy/mimir/services.test.yaml` committed (§4) — includes the two `Telemetry__*` env vars, not relying on platform auto-injection, and `Authentication__AllowedGitHubLogin: bjornnorgaard` filled in
+- [ ] CI extended with image build (context `./src`, see §4 CI note) → GHCR push → pin `services.test.yaml` tag, triggered on push to `main` only
 - [ ] EF Core `EnableRetryOnFailure()` added (recommended, not blocking)
-- [ ] New GitHub OAuth App registered with the real test callback URL (§6) once the operator confirms the hostname
-- [ ] `Authentication__AllowedGitHubLogin` value filled in with the real allowed GitHub username
 
 ## 8. Send back to the operator
 
-- Confirmation the webhook is active (§3 verify output).
-- `Authentication__GitHub__ClientId` / `Authentication__GitHub__ClientSecret` for the new deployed OAuth App — once the operator has sent back the confirmed test hostname for the callback URL (§6) — over a secure channel, never here in git/email/chat.
+- Confirmation CI is pushing images and pinning `services.test.yaml` on `main` pushes.
 - Anything you couldn't complete and why.
