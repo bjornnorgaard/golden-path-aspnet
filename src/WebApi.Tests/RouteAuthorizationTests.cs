@@ -74,8 +74,8 @@ public sealed class RouteAuthorizationTests : TestBase
     [Arguments("GET", "/login")]
     [Arguments("POST", "/logout")]
     [Arguments("GET", "/access-denied")]
-    [Arguments("GET", "/health/live")]
-    [Arguments("GET", "/health/ready")]
+    [Arguments("GET", "/healthz")]
+    [Arguments("GET", "/readyz")]
     public async Task PublicRoute_WithoutAuthentication_IsNotBlockedByAuthorization(string method, string path)
     {
         // Act: these routes exist specifically so a caller can reach them before having a session
@@ -90,8 +90,8 @@ public sealed class RouteAuthorizationTests : TestBase
     }
 
     [Test]
-    [Arguments("/health/live")]
-    [Arguments("/health/ready")]
+    [Arguments("/healthz")]
+    [Arguments("/readyz")]
     public async Task HealthCheck_WithoutAuthentication_ReturnsHealthy(string path)
     {
         // Act: an orchestrator's probe has no session and must never be asked to authenticate - it

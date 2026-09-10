@@ -29,11 +29,13 @@ public static class HealthCheckConfiguration
         {
             // Liveness: the process is up and able to handle requests. No dependency checks are run -
             // a struggling dependency should surface as a failed readiness check, not a restart.
-            app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false })
+            // Path fixed at /healthz cluster-wide (see app-developer-onboarding.md) so the collector
+            // can filter probe traffic out of traces/logs by path alone.
+            app.MapHealthChecks("/healthz", new HealthCheckOptions { Predicate = _ => false })
                 .AllowAnonymous();
 
             // Readiness: the app can actually serve traffic, e.g. the database is reachable.
-            app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains(ReadyTag) })
+            app.MapHealthChecks("/readyz", new HealthCheckOptions { Predicate = check => check.Tags.Contains(ReadyTag) })
                 .AllowAnonymous();
         }
     }

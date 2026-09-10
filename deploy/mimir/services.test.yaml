@@ -23,9 +23,9 @@ services:
     probes:
       port: http
       liveness:
-        path: /health/live
+        path: /healthz
       readiness:
-        path: /health/ready
+        path: /readyz
     env:
       - name: Telemetry__ServiceName
         value: golden-path-aspnet-test
