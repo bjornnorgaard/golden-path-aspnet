@@ -22,9 +22,9 @@ services:
         path: /health/live
       readiness:
         path: /health/ready
+    otel:
+      endpointEnv: Telemetry__CollectorEndpoint   # operator injects the collector URL under this name
     env:
-      - name: Telemetry__CollectorEndpoint
-        value: http://otel-collector.otel.svc.cluster.local:4317
       - name: Telemetry__ServiceName
         value: golden-path-aspnet-test
       - name: Authentication__AllowedGitHubLogin
