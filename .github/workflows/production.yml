@@ -22,7 +22,7 @@ jobs:
       name: Production
       # url: https://golden-path-aspnet.bybear.dk   # fill in once the operator confirms
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
 
