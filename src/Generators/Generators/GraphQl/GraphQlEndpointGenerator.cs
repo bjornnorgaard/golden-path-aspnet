@@ -82,7 +82,8 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
 
         sb.AppendLine("        services.AddGraphQLServer()");
         sb.AppendLine($"            .AddQueryType<{classPrefix}Query>()");
-        sb.AppendLine($"            .AddMutationType<{classPrefix}Mutation>();");
+        sb.AppendLine($"            .AddMutationType<{classPrefix}Mutation>()");
+        sb.AppendLine($"            .AddErrorFilter<{classPrefix}TraceIdErrorFilter>();");
         sb.AppendLine("        return services;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
@@ -104,6 +105,7 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         sb.AppendLine();
 
         EmitTelemetry(sb, classPrefix);
+        EmitErrorFilter(sb, classPrefix);
         EmitOperationType(sb, $"{classPrefix}Query", $"{classPrefix}Telemetry", queryOperations, contractsNamespace);
         EmitOperationType(sb, $"{classPrefix}Mutation", $"{classPrefix}Telemetry", mutationOperations, contractsNamespace);
         return sb.ToString();
@@ -114,6 +116,16 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         sb.AppendLine($"internal static class {classPrefix}Telemetry");
         sb.AppendLine("{");
         sb.AppendLine("    internal static readonly global::System.Diagnostics.ActivitySource ActivitySource = new(\"GoldenPath.GraphQL\");");
+        sb.AppendLine("}");
+        sb.AppendLine();
+    }
+
+    private static void EmitErrorFilter(StringBuilder sb, string classPrefix)
+    {
+        sb.AppendLine($"internal sealed class {classPrefix}TraceIdErrorFilter : global::HotChocolate.Execution.IErrorFilter");
+        sb.AppendLine("{");
+        sb.AppendLine("    public global::HotChocolate.IError OnError(global::HotChocolate.IError error) =>");
+        sb.AppendLine("        error.SetExtension(\"traceId\", global::System.Diagnostics.Activity.Current?.TraceId.ToString() ?? string.Empty);");
         sb.AppendLine("}");
         sb.AppendLine();
     }

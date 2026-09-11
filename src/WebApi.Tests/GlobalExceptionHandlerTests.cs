@@ -15,7 +15,7 @@ public sealed class GlobalExceptionHandlerTests
         var context = new DefaultHttpContext();
         await using var services = new ServiceCollection()
             .AddLogging()
-            .AddProblemDetails()
+            .AddProblemDetails(ExceptionHandlingConfiguration.ConfigureProblemDetails)
             .BuildServiceProvider();
         context.RequestServices = services;
         await using var responseBody = new MemoryStream();
@@ -38,6 +38,7 @@ public sealed class GlobalExceptionHandlerTests
         await Assert.That(problem.RootElement.GetProperty("title").GetString()).IsEqualTo("Unhandled exception");
         await Assert.That(problem.RootElement.GetProperty("detail").GetString()).IsEqualTo("An unexpected error occurred.");
         await Assert.That(problem.RootElement.GetProperty("status").GetInt32()).IsEqualTo((int)HttpStatusCode.InternalServerError);
+        await Assert.That(problem.RootElement.GetProperty("traceId").GetString()).IsEqualTo(context.TraceIdentifier);
         await Assert.That(problem.RootElement.GetRawText()).DoesNotContain("Sensitive exception detail");
     }
 }

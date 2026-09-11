@@ -9,7 +9,7 @@ public static class ExceptionHandlingConfiguration
     {
         public void AddPlatformExceptionHandling()
         {
-            builder.Services.AddProblemDetails();
+            builder.Services.AddProblemDetails(ConfigureProblemDetails);
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         }
     }
@@ -20,6 +20,11 @@ public static class ExceptionHandlingConfiguration
         {
             app.UseExceptionHandler();
         }
+    }
+
+    public static void ConfigureProblemDetails(ProblemDetailsOptions options)
+    {
+        options.CustomizeProblemDetails = context => { context.ProblemDetails.Extensions["traceId"] = Activity.Current?.TraceId.ToString() ?? context.HttpContext.TraceIdentifier; };
     }
 
     public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler

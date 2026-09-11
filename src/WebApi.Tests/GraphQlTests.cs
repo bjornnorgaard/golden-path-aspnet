@@ -36,14 +36,14 @@ public sealed class GraphQlTests : TestBase
     {
         const string title = "A todo created through the generated GraphQL transport";
         var create = await ExecuteAsync("""
-            mutation {
-              createTodo(input: { title: "A todo created through the generated GraphQL transport" }) {
-                id
-                title
-                isComplete
-              }
-            }
-            """);
+                                        mutation {
+                                          createTodo(input: { title: "A todo created through the generated GraphQL transport" }) {
+                                            id
+                                            title
+                                            isComplete
+                                          }
+                                        }
+                                        """);
 
         await Assert.That(create.RootElement.TryGetProperty("errors", out _)).IsFalse();
         var created = create.RootElement.GetProperty("data").GetProperty("createTodo");
@@ -64,17 +64,18 @@ public sealed class GraphQlTests : TestBase
     public async Task CreateTodo_invalid_input_returns_a_graphql_error()
     {
         var result = await ExecuteAsync("""
-            mutation {
-              createTodo(input: { title: "ab" }) {
-                id
-              }
-            }
-            """);
+                                        mutation {
+                                          createTodo(input: { title: "ab" }) {
+                                            id
+                                          }
+                                        }
+                                        """);
 
         await Assert.That(result.RootElement.TryGetProperty("data", out var data)).IsTrue();
         await Assert.That(data.ValueKind).IsEqualTo(JsonValueKind.Null);
         await Assert.That(result.RootElement.TryGetProperty("errors", out var errors)).IsTrue();
         await Assert.That(errors[0].GetProperty("message").GetString()).Contains("Title");
+        await Assert.That(errors[0].GetProperty("extensions").GetProperty("traceId").GetString()).IsNotNullOrEmpty();
     }
 
     private async Task<JsonDocument> ExecuteAsync(string query)
