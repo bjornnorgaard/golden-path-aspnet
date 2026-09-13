@@ -1,8 +1,12 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using WebApi.Database;
+using WebApi.Database.Models;
 
 namespace WebApi.Tests.Fixture;
 
@@ -21,17 +25,31 @@ public sealed class TestAuthHandler(
 {
     public const string SchemeName = "Test";
     public const string AllowedLogin = "test-user";
+    public const string AllowedEmail = "test-user@example.com";
     public const string AuthenticatedHeader = "X-Test-Authenticated";
+    public static readonly UserId TestUserId = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
 
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.ContainsKey(AuthenticatedHeader))
         {
-            return Task.FromResult(AuthenticateResult.NoResult());
+            return AuthenticateResult.NoResult();
         }
 
-        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, AllowedLogin)], SchemeName);
+        var db = Context.RequestServices.GetRequiredService<TodoContext>();
+        await db.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO ""Users"" (""Id"", ""Email"", ""DisplayName"", ""GivenName"", ""FamilyName"", ""AvatarUrl"")
+              VALUES ('11111111-1111-1111-1111-111111111111', 'test-user@example.com', 'test-user', 'Test', 'User', 'https://example.com/avatar.png')
+              ON CONFLICT (""Id"") DO NOTHING;",
+            Context.RequestAborted);
+
+        var identity = new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, TestUserId.ToString()),
+            new Claim(ClaimTypes.Name, AllowedLogin),
+            new Claim(ClaimTypes.Email, AllowedEmail)
+        ], SchemeName);
+
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
-        return Task.FromResult(AuthenticateResult.Success(ticket));
+        return AuthenticateResult.Success(ticket);
     }
 }

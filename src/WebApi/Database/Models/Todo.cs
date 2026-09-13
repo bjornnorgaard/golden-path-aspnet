@@ -9,4 +9,8 @@ public class Todo
     public DateTime? DueBy { get; set; }
 
     public required bool IsComplete { get; set; }
+
+    public required UserId OwnerUserId { get; set; }
+
+    public User Owner { get; set; } = null!;
 }

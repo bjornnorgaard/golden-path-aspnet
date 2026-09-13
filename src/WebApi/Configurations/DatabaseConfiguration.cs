@@ -20,7 +20,30 @@ public static class DatabaseConfiguration
         {
             using var scope = app.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<TodoContext>();
-            dbContext.Database.Migrate();
+
+            var connection = dbContext.Database.GetDbConnection();
+            connection.Open();
+            try
+            {
+                using var lockCmd = connection.CreateCommand();
+                lockCmd.CommandText = "SELECT pg_advisory_lock(7423982);";
+                lockCmd.ExecuteNonQuery();
+
+                try
+                {
+                    dbContext.Database.Migrate();
+                }
+                finally
+                {
+                    using var unlockCmd = connection.CreateCommand();
+                    unlockCmd.CommandText = "SELECT pg_advisory_unlock(7423982);";
+                    unlockCmd.ExecuteNonQuery();
+                }
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
     }
 }

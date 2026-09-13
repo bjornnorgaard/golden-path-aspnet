@@ -1,7 +1,11 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using WebApi.Database;
+using WebApi.Database.Models;
 
 namespace WebApi.Configurations;
 
@@ -18,6 +22,8 @@ public static class AuthenticationConfiguration
         {
             var options = builder.Configuration.GetAuthentication();
 
+            builder.Services.AddHttpContextAccessor();
+
             builder.Services
                 .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(cookie =>
@@ -31,6 +37,53 @@ public static class AuthenticationConfiguration
                     google.ClientId = options.Google.ClientId;
                     google.ClientSecret = options.Google.ClientSecret;
                     google.CallbackPath = options.Google.CallbackPath;
+
+                    google.Events.OnCreatingTicket = async context =>
+                    {
+                        var email = context.Principal?.FindFirst(ClaimTypes.Email)?.Value
+                                    ?? context.Principal?.FindFirst("email")?.Value;
+                        var displayName = context.Principal?.FindFirst(ClaimTypes.Name)?.Value
+                                          ?? context.Principal?.FindFirst("name")?.Value;
+                        var givenName = context.Principal?.FindFirst(ClaimTypes.GivenName)?.Value
+                                        ?? context.Principal?.FindFirst("given_name")?.Value;
+                        var familyName = context.Principal?.FindFirst(ClaimTypes.Surname)?.Value
+                                         ?? context.Principal?.FindFirst("family_name")?.Value;
+                        var avatarUrl = context.Principal?.FindFirst("picture")?.Value
+                                        ?? context.Principal?.FindFirst("urn:google:image_url")?.Value;
+
+                        if (!string.IsNullOrWhiteSpace(email))
+                        {
+                            var db = context.HttpContext.RequestServices.GetRequiredService<TodoContext>();
+                            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
+                            if (user is null)
+                            {
+                                user = new User
+                                {
+                                    Id = UserId.New(),
+                                    Email = email,
+                                    DisplayName = displayName,
+                                    GivenName = givenName,
+                                    FamilyName = familyName,
+                                    AvatarUrl = avatarUrl
+                                };
+                                await db.Users.AddAsync(user);
+                                await db.SaveChangesAsync();
+                            }
+                            else
+                            {
+                                user.DisplayName = displayName ?? user.DisplayName;
+                                user.GivenName = givenName ?? user.GivenName;
+                                user.FamilyName = familyName ?? user.FamilyName;
+                                user.AvatarUrl = avatarUrl ?? user.AvatarUrl;
+                                await db.SaveChangesAsync();
+                            }
+
+                            if (context.Identity is not null)
+                            {
+                                context.Identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                            }
+                        }
+                    };
 
                     google.Events.OnRemoteFailure = context =>
                     {

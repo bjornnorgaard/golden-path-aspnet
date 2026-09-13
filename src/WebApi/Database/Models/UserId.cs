@@ -1,0 +1,6 @@
+using WebApi.Annotations;
+
+namespace WebApi.Database.Models;
+
+[StrongId]
+public readonly partial struct UserId;

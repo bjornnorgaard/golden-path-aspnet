@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WebApi.Database;
 using WebApi.Database.Models;
@@ -18,6 +19,7 @@ public class GetTodoListTests : TestBase
         await using (var scope = Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TodoContext>();
+            await EnsureTestUserExistsAsync(db);
 
             var todos = Enumerable.Range(1, 12)
                 .Select(i => new Todo
@@ -25,7 +27,8 @@ public class GetTodoListTests : TestBase
                     Id = TodoId.New(),
                     Title = $"Todo {i:00}",
                     DueBy = null,
-                    IsComplete = false
+                    IsComplete = false,
+                    OwnerUserId = TestAuthHandler.TestUserId
                 })
                 .ToArray();
 
@@ -55,11 +58,13 @@ public class GetTodoListTests : TestBase
         await using (var scope = Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TodoContext>();
+            await EnsureTestUserExistsAsync(db);
             await db.Todos.AddRangeAsync(Enumerable.Range(1, 25).Select(i => new Todo
             {
                 Id = TodoId.New(),
                 Title = $"Default page {i:00}",
-                IsComplete = false
+                IsComplete = false,
+                OwnerUserId = TestAuthHandler.TestUserId
             }));
             await db.SaveChangesAsync();
         }
@@ -97,11 +102,13 @@ public class GetTodoListTests : TestBase
         await using (var scope = Factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<TodoContext>();
+            await EnsureTestUserExistsAsync(db);
             await db.Todos.AddRangeAsync(Enumerable.Range(1, 120).Select(i => new Todo
             {
                 Id = TodoId.New(),
                 Title = $"Maximum page {i:000}",
-                IsComplete = false
+                IsComplete = false,
+                OwnerUserId = TestAuthHandler.TestUserId
             }));
             await db.SaveChangesAsync();
         }
@@ -152,5 +159,13 @@ public class GetTodoListTests : TestBase
         await Assert.That(errors).IsNotNull();
         await Assert.That(errors!.ContainsKey("Limit")).IsTrue();
         await Assert.That(errors["Limit"].Any(message => message.Contains("greater than or equal to '1'"))).IsTrue();
+    }
+
+    private static async Task EnsureTestUserExistsAsync(TodoContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO ""Users"" (""Id"", ""Email"", ""DisplayName"", ""GivenName"", ""FamilyName"", ""AvatarUrl"")
+              VALUES ('11111111-1111-1111-1111-111111111111', 'test-user@example.com', 'test-user', 'Test', 'User', 'https://example.com/avatar.png')
+              ON CONFLICT (""Id"") DO NOTHING;");
     }
 }

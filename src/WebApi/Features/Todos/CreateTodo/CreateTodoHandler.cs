@@ -3,18 +3,20 @@ using WebApi.Annotations;
 using WebApi.Database;
 using WebApi.Database.Models;
 using WebApi.Features.Todos.SendTodoDueReminder;
+using WebApi.Services;
 using WebApi.Telemetry;
 using TodoId = WebApi.Database.Models.TodoId;
 
 namespace WebApi.Features.Todos.CreateTodo;
 
 [Service(ServiceLifetime.Transient)]
-internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClient jobs)
+internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClient jobs, IUserContext userContext)
 {
     public class Command
     {
         public string Title { get; set; } = null!;
         public DateTime? DueBy { get; set; }
+        public UserId? OwnerUserId { get; set; }
     }
 
     public class Result
@@ -24,12 +26,17 @@ internal sealed class CreateTodoHandler(TodoContext context, IBackgroundJobClien
 
     public async Task<Result> HandleAsync(Command request, CancellationToken ct)
     {
+        var ownerUserId = request.OwnerUserId
+            ?? userContext.CurrentUserId
+            ?? throw new InvalidOperationException("An authenticated user is required to create a todo.");
+
         var todo = new Todo
         {
             Id = TodoId.New(),
             Title = request.Title,
             DueBy = request.DueBy,
-            IsComplete = false
+            IsComplete = false,
+            OwnerUserId = ownerUserId
         };
 
         await context.Todos.AddAsync(todo, ct);
