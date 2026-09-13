@@ -3,7 +3,7 @@
 A .NET 10 ASP.NET Core minimal API reference application — a "golden path" showing how a
 production-shaped service fits together: source-generated endpoint/service/config registration,
 REST and GraphQL over the same feature handlers, EF Core on PostgreSQL, background jobs, OpenTelemetry,
-and GitHub-based auth in front of all of it.
+and Google-based auth in front of all of it.
 
 The example domain is a small Todo API (create/get/list/update/toggle/delete, plus scheduled
 reminder and sweep jobs), which exists to exercise the plumbing rather than as a feature in itself.
@@ -29,7 +29,7 @@ request/response DTOs, a FluentValidation validator, and a handler exposed over 
 GraphQL from the same code.
 
 Every request — REST endpoints, GraphQL, the Hangfire dashboard, and the Scalar/OpenAPI docs —
-requires a GitHub login, as described below.
+requires an authenticated session, as described below.
 
 ## Running locally
 
@@ -44,7 +44,7 @@ dotnet run --project src/WebApi
 The app listens on `http://localhost:5200` by default. The Aspire dashboard (logs/traces/spans) is
 at `http://localhost:18888`.
 
-Complete the [GitHub OAuth App setup](#one-time-setup-register-a-github-oauth-app) below before
+Complete the [Google OAuth setup](#one-time-setup-register-a-google-oauth-client) below before
 logging in for the first time.
 
 ### Common commands
@@ -62,49 +62,28 @@ Integration tests require Docker (Testcontainers starts PostgreSQL for them). Se
 ## Authentication
 
 Every request into the service — REST endpoints, GraphQL, the Hangfire dashboard, and the
-Scalar/OpenAPI docs — requires a GitHub login, restricted to the GitHub account configured as
-`Authentication:AllowedGitHubLogin` in [`appsettings.json`](src/WebApi/appsettings.json).
+Scalar/OpenAPI docs — requires an authenticated session.
 
-### One-time setup: register a GitHub OAuth App
+### One-time setup: register a Google OAuth Client
 
-GitHub doesn't expose an API for creating OAuth Apps, so this step is manual:
-
-1. Go to https://github.com/settings/applications/new (or your org's equivalent under
-   `https://github.com/organizations/<org>/settings/applications/new` if you'd rather own it there).
-2. Fill in:
-   - **Application name**: anything, e.g. `golden-path-aspnet (local)`
-   - **Homepage URL**: `http://localhost:5200`
-   - **Authorization callback URL**: `http://localhost:5200/auth/callback/github`
-3. Click **Register application**, then **Generate a new client secret**.
+1. Go to the [Google Cloud Console Credentials page](https://console.cloud.google.com/apis/credentials).
+2. Create an OAuth 2.0 Client ID (Web application type).
+3. Set Authorized redirect URIs:
+   - For local development: `http://localhost:5200/auth/callback/google`
 4. Store the Client ID and Client Secret locally with `dotnet user-secrets` — never commit them to
-   `appsettings.json`. The `--project` flag lets you run this from the repo root; without it,
-   `dotnet user-secrets` must be run from inside `src/WebApi`:
+   `appsettings.json`:
 
    ```bash
-   dotnet user-secrets set "Authentication:GitHub:ClientId" "<client-id>" --project src/WebApi
-   dotnet user-secrets set "Authentication:GitHub:ClientSecret" "<client-secret>" --project src/WebApi
+   dotnet user-secrets set "Authentication:Google:ClientId" "<client-id>" --project src/WebApi
+   dotnet user-secrets set "Authentication:Google:ClientSecret" "<client-secret>" --project src/WebApi
    ```
 
-For a deployed environment, register a second OAuth App with that environment's real callback URL
-and supply the same two values as environment variables
-(`Authentication__GitHub__ClientId` / `Authentication__GitHub__ClientSecret`) instead of user secrets.
-
-### Local development
-
-`compose.yaml` only runs the app's dependencies (Postgres, the OTel collector, the Aspire dashboard) —
-the app itself runs on the host via `dotnet run`, using the `dotnet user-secrets` values from setup
-above and the `localhost`-pointed defaults already in `appsettings.json`:
-
-```bash
-docker compose up -d
-dotnet run --project src/WebApi
-```
+For a deployed environment, supply the values as environment variables
+(`Authentication__Google__ClientId` / `Authentication__Google__ClientSecret`).
 
 ### How it works
 
-- Logging in (`/login`) redirects to GitHub, then back to `/auth/callback/github`. The ticket is rejected
-  unless the GitHub login matches `Authentication:AllowedGitHubLogin`, so authenticating with GitHub
-  proves identity but a non-matching account still gets bounced to `/access-denied`.
+- Logging in (`/login`) redirects to Google OAuth, then back to `/auth/callback/google`.
 - A global authorization fallback policy requires an authenticated session for any endpoint that
   doesn't explicitly opt out — only `/login`, `/logout`, and `/access-denied` are anonymous.
 - `POST /logout` clears the session cookie.

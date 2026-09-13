@@ -6,10 +6,10 @@
 export const BASE_URL = __ENV.BASE_URL || 'https://golden-path-aspnet.bybear.dk';
 
 // Every route except /login, /logout, /access-denied, /healthz, and /readyz sits
-// behind GitHub OAuth (see AuthenticationConfiguration.cs), so hitting a deployed
+// behind authentication (see AuthenticationConfiguration.cs), so hitting a deployed
 // environment needs an authenticated session cookie — there's no API-key/service
 // path today. Extract the `.AspNetCore.Cookies` value from a browser session
-// that's already logged in via GitHub, then set AUTH_COOKIE=".AspNetCore.Cookies=<value>"
+// that's already logged in, then set AUTH_COOKIE=".AspNetCore.Cookies=<value>"
 // (e.g. in a gitignored k6/.env, `set -a; source k6/.env; set +a` before `k6 run`).
 // Not needed for local runs against an unauthenticated dev instance.
 const AUTH_COOKIE = __ENV.AUTH_COOKIE || '';
@@ -23,7 +23,7 @@ const IS_LOCAL_TARGET = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.tes
 if (!IS_LOCAL_TARGET && !AUTH_COOKIE) {
   throw new Error(
     `AUTH_COOKIE is not set, but BASE_URL (${BASE_URL}) is not local — every route on this ` +
-    'app is behind GitHub OAuth, so requests would just 401. Run: ' +
+    'app is behind authentication, so requests would just 401. Run: ' +
     '`set -a; source k6/.env; set +a` (populating AUTH_COOKIE there first if you haven\'t) ' +
     'before `k6 run`, or set BASE_URL to a local instance instead.'
   );

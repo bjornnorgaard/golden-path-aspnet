@@ -7,10 +7,10 @@ using Microsoft.Extensions.Options;
 namespace WebApi.Tests.Fixture;
 
 /// <summary>
-/// Stands in for a real GitHub session in tests: a request carrying <see cref="AuthenticatedHeader"/>
+/// Stands in for a real authenticated session in tests: a request carrying <see cref="AuthenticatedHeader"/>
 /// is treated as already authenticated as <see cref="AllowedLogin"/>, and any other request is treated
 /// as anonymous - so integration tests exercise the same global fallback authorization policy as
-/// production (see AuthenticationConfiguration) without needing a real GitHub login. <see cref="TestBase.Client"/>
+/// production (see AuthenticationConfiguration) without needing a real login. <see cref="TestBase.Client"/>
 /// adds the header by default, so only tests that build their own client (see RouteAuthorizationTests)
 /// ever see the anonymous path.
 /// </summary>

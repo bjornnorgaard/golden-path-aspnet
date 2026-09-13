@@ -29,7 +29,5 @@ services:
     env:
       - name: Telemetry__ServiceName
         value: golden-path-aspnet-test
-      - name: Authentication__AllowedGitHubLogin
-        value: "bjornnorgaard"
-      # ConnectionStrings__DefaultConnection, Authentication__GitHub__ClientId,
-      # Authentication__GitHub__ClientSecret — operator injects as secrets, do not add here
+      # ConnectionStrings__DefaultConnection, Authentication__Google__ClientId,
+      # Authentication__Google__ClientSecret — operator injects as secrets, do not add here

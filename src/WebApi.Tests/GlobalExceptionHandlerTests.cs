@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
@@ -38,7 +39,8 @@ public sealed class GlobalExceptionHandlerTests
         await Assert.That(problem.RootElement.GetProperty("title").GetString()).IsEqualTo("Unhandled exception");
         await Assert.That(problem.RootElement.GetProperty("detail").GetString()).IsEqualTo("An unexpected error occurred.");
         await Assert.That(problem.RootElement.GetProperty("status").GetInt32()).IsEqualTo((int)HttpStatusCode.InternalServerError);
-        await Assert.That(problem.RootElement.GetProperty("traceId").GetString()).IsEqualTo(context.TraceIdentifier);
+        var expectedTraceId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
+        await Assert.That(problem.RootElement.GetProperty("traceId").GetString()).IsEqualTo(expectedTraceId);
         await Assert.That(problem.RootElement.GetRawText()).DoesNotContain("Sensitive exception detail");
     }
 }

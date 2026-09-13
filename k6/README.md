@@ -50,15 +50,14 @@ BASE_URL=http://localhost:8080 k6 run k6/rest-api.js
 
 ### Running against a deployed environment
 
-Production and test both sit entirely behind GitHub OAuth (see
+Production and test both sit entirely behind authentication (see
 `AuthenticationConfiguration.cs`) — every route except `/login`, `/logout`,
 `/access-denied`, `/healthz`, and `/readyz` requires an authenticated session
 cookie, and there's no API key or service-account path. Since these
 benchmarks only run occasionally, the simplest option is a static, manually
 refreshed cookie rather than adding a whole separate auth scheme:
 
-1. Log into the target environment in a browser (GitHub OAuth login,
-   allowlisted to your account).
+1. Log into the target environment in a browser (Google sign-in).
 2. In dev tools, copy the `.AspNetCore.Cookies` cookie value.
 3. Put it in a gitignored `k6/.env` (see `k6/.env` — already set up and
    excluded by `.gitignore`/`k6/.gitignore`):

@@ -15,8 +15,7 @@ namespace WebApi.Tests;
 /// Requests are sent through <see cref="AnonymousClient"/>, which never carries
 /// <see cref="TestAuthHandler.AuthenticatedHeader"/>, so <c>TestAuthHandler</c> reports them as
 /// unauthenticated exactly like a real anonymous caller. Auto-redirect is disabled so a 302 (e.g.
-/// the cookie challenge, or GitHub's own authorize redirect) is observable directly instead of
-/// being followed to an external host.
+/// a challenge redirect) is observable directly instead of being followed to an external host.
 /// </para>
 /// </summary>
 public sealed class RouteAuthorizationTests : TestBase

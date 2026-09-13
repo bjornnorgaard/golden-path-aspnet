@@ -52,7 +52,7 @@ public static class HangfireConfiguration
             {
                 // No Hangfire-specific authorization filter: the dashboard is mapped as a regular
                 // endpoint, so the global fallback policy (see AuthenticationConfiguration) already
-                // requires an authenticated, allow-listed GitHub login before this is reachable.
+                // requires an authenticated user before this is reachable.
                 app.MapHangfireDashboard(new DashboardOptions
                 {
                     Authorization = []

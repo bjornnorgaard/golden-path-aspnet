@@ -23,18 +23,16 @@ public sealed class TestApiFactory : TestWebApplicationFactory<Program>
 
         builder.UseSetting("Cors:AllowedOrigins:0", "https://allowed.test");
 
-        builder.UseSetting("Authentication:AllowedGitHubLogin", TestAuthHandler.AllowedLogin);
-
-        // The GitHub scheme still gets constructed on every request (ASP.NET Core's authentication
+        // The Google scheme still gets constructed on every request (ASP.NET Core's authentication
         // middleware probes every registered remote-auth scheme to see if the request matches its
-        // callback path), so its options must pass OAuthOptions.Validate() even though GitHub itself
+        // callback path), so its options must pass OAuthOptions.Validate() even though Google itself
         // is never exercised in tests.
-        builder.UseSetting("Authentication:GitHub:ClientId", "test-client-id");
-        builder.UseSetting("Authentication:GitHub:ClientSecret", "test-client-secret");
+        builder.UseSetting("Authentication:Google:ClientId", "test-client-id");
+        builder.UseSetting("Authentication:Google:ClientSecret", "test-client-secret");
 
-        // Swap the real GitHub/cookie login for a fake scheme that authenticates every request as
-        // the allow-listed test user, so tests exercise the real fallback authorization policy
-        // without driving an actual GitHub OAuth flow.
+        // Swap the real Google/cookie login for a fake scheme that authenticates every request as
+        // the test user, so tests exercise the real fallback authorization policy
+        // without driving an actual Google OAuth flow.
         builder.ConfigureTestServices(services =>
         {
             services
