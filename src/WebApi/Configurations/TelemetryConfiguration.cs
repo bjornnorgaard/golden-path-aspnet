@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -40,10 +41,9 @@ public static class TelemetryConfiguration
                     .SetResourceBuilder(resourceBuilder)
                     .AddSource(TelemetryConfig.ActivitySource.Name)
                     .AddProcessor(new GraphQlOperationNameProcessor())
-                    .AddAspNetCoreInstrumentation()
+                    .AddAspNetCoreInstrumentation(o => o.Filter = context => !IsHealthCheckPath(context.Request.Path))
                     .AddHttpClientInstrumentation()
                     .AddHangfireInstrumentation()
-                    //.AddNpgsql()
                     .AddOtlpExporter(o => o.Endpoint = endpoint))
                 .WithMetrics(metrics => metrics
                     .SetResourceBuilder(resourceBuilder)
@@ -64,6 +64,10 @@ public static class TelemetryConfiguration
             });
         }
     }
+
+    private static bool IsHealthCheckPath(PathString path) =>
+        path.Equals(HealthCheckConfiguration.LivenessPath, StringComparison.OrdinalIgnoreCase) ||
+        path.Equals(HealthCheckConfiguration.ReadinessPath, StringComparison.OrdinalIgnoreCase);
 
     private sealed class GraphQlOperationNameProcessor : BaseProcessor<Activity>
     {
