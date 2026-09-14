@@ -3,7 +3,7 @@
 A .NET 10 ASP.NET Core minimal API reference application — a "golden path" showing how a
 production-shaped service fits together: source-generated endpoint/service/config registration,
 REST and GraphQL over the same feature handlers, EF Core on PostgreSQL, background jobs, OpenTelemetry,
-and Google-based auth in front of all of it.
+and Google/Facebook-based auth in front of all of it (Apple to follow).
 
 The example domain is a small Todo API (create/get/list/update/toggle/delete, plus scheduled
 reminder and sweep jobs), which exists to exercise the plumbing rather than as a feature in itself.
@@ -44,8 +44,9 @@ dotnet run --project src/WebApi
 The app listens on `http://localhost:5200` by default. The Aspire dashboard (logs/traces/spans) is
 at `http://localhost:18888`.
 
-Complete the [Google OAuth setup](#one-time-setup-register-a-google-oauth-client) below before
-logging in for the first time.
+Complete the [Google OAuth setup](#one-time-setup-register-a-google-oauth-client) and/or the
+[Facebook Login setup](#one-time-setup-register-a-facebook-login-app) below before logging in for
+the first time.
 
 ### Common commands
 
@@ -81,9 +82,28 @@ Scalar/OpenAPI docs — requires an authenticated session.
 For a deployed environment, supply the values as environment variables
 (`Authentication__Google__ClientId` / `Authentication__Google__ClientSecret`).
 
+### One-time setup: register a Facebook Login app
+
+1. Go to the [Meta for Developers apps page](https://developers.facebook.com/apps/) and create an
+   app with the Facebook Login product added.
+2. Under Facebook Login settings, set Valid OAuth Redirect URIs:
+   - For local development: `http://localhost:5200/auth/callback/facebook`
+3. Store the App ID and App Secret locally with `dotnet user-secrets` — never commit them to
+   `appsettings.json`:
+
+   ```bash
+   dotnet user-secrets set "Authentication:Facebook:ClientId" "<app-id>" --project src/WebApi
+   dotnet user-secrets set "Authentication:Facebook:ClientSecret" "<app-secret>" --project src/WebApi
+   ```
+
+For a deployed environment, supply the values as environment variables
+(`Authentication__Facebook__ClientId` / `Authentication__Facebook__ClientSecret`).
+
 ### How it works
 
-- Logging in (`/login`) redirects to Google OAuth, then back to `/auth/callback/google`.
+- Logging in (`/login`) redirects to Google OAuth by default, then back to
+  `/auth/callback/google`. Pass `/login?provider=facebook` to sign in with Facebook instead
+  (redirects to `/auth/callback/facebook`). Apple sign-in is planned but not yet implemented.
 - A global authorization fallback policy requires an authenticated session for any endpoint that
   doesn't explicitly opt out — only `/login`, `/logout`, and `/access-denied` are anonymous.
 - `POST /logout` clears the session cookie.

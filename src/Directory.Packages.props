@@ -11,6 +11,7 @@
         <PackageVersion Include="Hangfire.PostgreSql" Version="1.21.1" />
         <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.6" />
         <PackageVersion Include="HotChocolate.Data" Version="16.6.6" />
+        <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.12" />
         <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.12" />
         <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
         <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
