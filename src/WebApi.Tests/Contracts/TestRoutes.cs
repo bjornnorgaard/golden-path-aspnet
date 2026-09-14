@@ -11,4 +11,12 @@ public static class TestRoutes
         public const string Delete = "/todos/delete";
         public const string Toggle = "/todos/toggle";
     }
+
+    public static class Users
+    {
+        public const string GetById = "/users/get-by-id";
+        public const string GetList = "/users/get-list";
+        public const string Update = "/users/update";
+        public const string Delete = "/users/delete";
+    }
 }

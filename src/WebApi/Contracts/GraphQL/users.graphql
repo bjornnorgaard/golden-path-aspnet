@@ -1,0 +1,67 @@
+"""The GraphQL contract mirrors the operations in ../OpenApi/users.openapi.yaml."""
+
+type Query {
+  getUserById(input: GetUserByIdRequest!): GetUserByIdResponse!
+  getUserList(input: GetUserListRequest!): GetUserListResponse!
+}
+
+type Mutation {
+  updateUser(input: UpdateUserRequest!): UpdateUserResponse!
+  deleteUser(input: DeleteUserRequest!): DeleteUserResponse!
+}
+
+input GetUserByIdRequest {
+  id: String!
+}
+
+input DeleteUserRequest {
+  id: String!
+}
+
+input UpdateUserRequest {
+  id: String!
+  displayName: String
+  givenName: String
+  familyName: String
+  avatarUrl: String
+}
+
+input GetUserListRequest {
+  limit: Int
+  offset: Int
+}
+
+type GetUserByIdResponse {
+  id: String!
+  email: String!
+  displayName: String
+  givenName: String
+  familyName: String
+  avatarUrl: String
+}
+
+type GetUserListResponse {
+  users: [GetUserListItem!]!
+}
+
+type GetUserListItem {
+  id: String!
+  email: String!
+  displayName: String
+  givenName: String
+  familyName: String
+  avatarUrl: String
+}
+
+type UpdateUserResponse {
+  id: String!
+  email: String!
+  displayName: String
+  givenName: String
+  familyName: String
+  avatarUrl: String
+}
+
+type DeleteUserResponse {
+  id: String!
+}

@@ -1,0 +1,239 @@
+openapi: 3.1.0
+info:
+  title: Users API
+  version: 1.0.0
+  description: |
+    A small user-profile API. The specification is the HTTP contract source of truth:
+    routes, request binding, response serialization, and documented error statuses are
+    generated from this document. Business rules are enforced by operation handlers.
+    Users are provisioned automatically on sign-in, so there is no create operation here.
+paths:
+  /users/get-by-id:
+    post:
+      operationId: getUserById
+      summary: Get a user by ID
+      description: Returns a user's profile identified by their UUID.
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetUserByIdRequest'
+      responses:
+        '200':
+          description: User found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserByIdResponse'
+        '400':
+          description: The supplied user ID is invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+        '404':
+          description: No user exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /users/get-list:
+    post:
+      operationId: getUserList
+      summary: List users
+      description: Returns users ordered by ID. Omitted or null paging values default to an offset of 0 and the configured default limit.
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetUserListRequest'
+      responses:
+        '200':
+          description: User page returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserListResponse'
+        '400':
+          description: The paging request violates the list-users business rules.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+  /users/update:
+    post:
+      operationId: updateUser
+      summary: Update a user
+      description: Replaces a user's display name, given name, family name, and avatar URL. Email is managed by sign-in and cannot be changed here.
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserResponse'
+        '400':
+          description: The update request violates the business rules.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+        '404':
+          description: No user exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /users/delete:
+    post:
+      operationId: deleteUser
+      summary: Delete a user
+      description: Permanently deletes a user identified by their UUID, along with their todos.
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteUserRequest'
+      responses:
+        '200':
+          description: User deleted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteUserResponse'
+        '400':
+          description: The supplied user ID is invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Validation errors keyed by property name.
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+        '404':
+          description: No user exists with the supplied ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    GetUserByIdRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          description: The UUID of the user to operate on.
+    DeleteUserRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          description: The UUID of the user to delete.
+    UpdateUserRequest:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+        displayName:
+          type: [string, 'null']
+          description: Optional display name shown throughout the app.
+        givenName:
+          type: [string, 'null']
+        familyName:
+          type: [string, 'null']
+        avatarUrl:
+          type: [string, 'null']
+    GetUserListRequest:
+      type: object
+      properties:
+        limit:
+          type: [integer, 'null']
+          format: int32
+          minimum: 1
+          maximum: 200
+          default: 20
+        offset:
+          type: [integer, 'null']
+          format: int32
+          minimum: 0
+          default: 0
+    GetUserByIdResponse:
+      type: object
+      required: [id, email]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        displayName: { type: [string, 'null'] }
+        givenName: { type: [string, 'null'] }
+        familyName: { type: [string, 'null'] }
+        avatarUrl: { type: [string, 'null'] }
+    GetUserListResponse:
+      type: object
+      required: [users]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/GetUserListItem'
+    GetUserListItem:
+      type: object
+      required: [id, email]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        displayName: { type: [string, 'null'] }
+        givenName: { type: [string, 'null'] }
+        familyName: { type: [string, 'null'] }
+        avatarUrl: { type: [string, 'null'] }
+    UpdateUserResponse:
+      type: object
+      required: [id, email]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        displayName: { type: [string, 'null'] }
+        givenName: { type: [string, 'null'] }
+        familyName: { type: [string, 'null'] }
+        avatarUrl: { type: [string, 'null'] }
+    DeleteUserResponse:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, format: uuid }

@@ -20,4 +20,7 @@ public static class TelemetryTagKeys
 {
     [TagKey(typeof(string), typeof(TodoId))]
     private const string TodoId = "bybear.todo.id";
+
+    [TagKey(typeof(string), typeof(UserId))]
+    private const string UserId = "bybear.user.id";
 }

@@ -28,12 +28,26 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
 
     private static void Generate(SourceProductionContext output, ImmutableArray<InputFile> files, ImmutableArray<ClassInfo> classes, string rootNamespace)
     {
-        foreach (var file in files)
+        var documents = files
+            .Select(file => GraphQlDocument.Parse(file.Path, file.Text))
+            .Where(static document => document is not null)
+            .Cast<GraphQlDocument>()
+            .OrderBy(static document => document.Name, StringComparer.Ordinal)
+            .ToArray();
+
+        foreach (var document in documents)
         {
-            var document = GraphQlDocument.Parse(file.Path, file.Text);
-            if (document is null) continue;
             output.AddSource($"GraphQl/{document.Name}/Endpoints.g.cs", SourceText.From(Emit(document, rootNamespace, classes, output), Encoding.UTF8));
             output.AddSource($"GraphQl/{document.Name}/TransportExtensions.g.cs", SourceText.From(EmitTransportExtensions(document, rootNamespace), Encoding.UTF8));
+        }
+
+        // One entry point regardless of how many *.graphql/*.openapi.yaml documents exist: callers
+        // (Program.cs) call builder.AddGeneratedTransportLayers()/app.MapGeneratedTransportLayers()/
+        // app.MapGeneratedGraphQlPlayground() exactly once, and this aggregator fans each call out to
+        // every document instead of every document needing its own bespoke, fully-qualified call site.
+        if (documents.Length > 0)
+        {
+            output.AddSource("GraphQl/AggregateTransportExtensions.g.cs", SourceText.From(EmitAggregateTransportExtensions(documents, rootNamespace), Encoding.UTF8));
         }
     }
 
@@ -80,9 +94,22 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
             sb.AppendLine($"        services.AddScoped<{interfaceName}, global::{matches[0].FullName}>();");
         }
 
-        sb.AppendLine("        services.AddGraphQLServer()");
-        sb.AppendLine($"            .AddQueryType<{classPrefix}Query>()");
-        sb.AppendLine($"            .AddMutationType<{classPrefix}Mutation>()");
+        // HotChocolate allows exactly one root Query and one root Mutation type per schema, so
+        // when multiple *.graphql documents are registered only the first one may call
+        // AddQueryType()/AddMutationType(). Every document (including that first one) still
+        // contributes its own operations via AddTypeExtension, so any number of documents can
+        // coexist on one schema. The marker records which document already claimed the roots,
+        // regardless of registration order.
+        sb.AppendLine("        var graphQlServerBuilder = services.AddGraphQLServer();");
+        sb.AppendLine("        if (!global::System.Linq.Enumerable.Any(services, static descriptor => descriptor.ServiceType == typeof(global::WebApi.Annotations.GraphQlRootTypesMarker)))");
+        sb.AppendLine("        {");
+        sb.AppendLine("            services.AddSingleton<global::WebApi.Annotations.GraphQlRootTypesMarker>();");
+        sb.AppendLine("            graphQlServerBuilder.AddQueryType().AddMutationType();");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        graphQlServerBuilder");
+        sb.AppendLine($"            .AddTypeExtension<{classPrefix}Query>()");
+        sb.AppendLine($"            .AddTypeExtension<{classPrefix}Mutation>()");
         sb.AppendLine($"            .AddErrorFilter<{classPrefix}TraceIdErrorFilter>();");
         sb.AppendLine("        return services;");
         sb.AppendLine("    }");
@@ -92,13 +119,21 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         sb.AppendLine("{");
         sb.AppendLine("    public static global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapGeneratedGraphQlEndpoints(this global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints)");
         sb.AppendLine("    {");
-        sb.AppendLine("        endpoints.MapGraphQL(\"/graphql\");");
+        sb.AppendLine("        // Every *.graphql document maps the same shared \"/graphql\" route; only the first one to");
+        sb.AppendLine("        // claim it should actually call MapGraphQL, or ASP.NET Core routing sees duplicate endpoints.");
+        sb.AppendLine("        if (endpoints.ServiceProvider.GetRequiredService<global::WebApi.Annotations.GraphQlRootTypesMarker>().TryClaim(\"graphql-endpoint\"))");
+        sb.AppendLine("        {");
+        sb.AppendLine("            endpoints.MapGraphQL(\"/graphql\");");
+        sb.AppendLine("        }");
         sb.AppendLine("        return endpoints;");
         sb.AppendLine("    }");
         sb.AppendLine();
         sb.AppendLine("    public static global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapGeneratedGraphQlPlayground(this global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints)");
         sb.AppendLine("    {");
-        sb.AppendLine("        endpoints.MapNitroApp(\"/graphql/playground\", \"/graphql\");");
+        sb.AppendLine("        if (endpoints.ServiceProvider.GetRequiredService<global::WebApi.Annotations.GraphQlRootTypesMarker>().TryClaim(\"graphql-playground\"))");
+        sb.AppendLine("        {");
+        sb.AppendLine("            endpoints.MapNitroApp(\"/graphql/playground\", \"/graphql\");");
+        sb.AppendLine("        }");
         sb.AppendLine("        return endpoints;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
@@ -106,8 +141,8 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
 
         EmitTelemetry(sb, classPrefix);
         EmitErrorFilter(sb, classPrefix);
-        EmitOperationType(sb, $"{classPrefix}Query", $"{classPrefix}Telemetry", queryOperations, contractsNamespace);
-        EmitOperationType(sb, $"{classPrefix}Mutation", $"{classPrefix}Telemetry", mutationOperations, contractsNamespace);
+        EmitOperationType(sb, $"{classPrefix}Query", $"{classPrefix}Telemetry", queryOperations, contractsNamespace, "Query");
+        EmitOperationType(sb, $"{classPrefix}Mutation", $"{classPrefix}Telemetry", mutationOperations, contractsNamespace, "Mutation");
         return sb.ToString();
     }
 
@@ -130,8 +165,9 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void EmitOperationType(StringBuilder sb, string typeName, string telemetryTypeName, GraphQlOperation[] operations, string contractsNamespace)
+    private static void EmitOperationType(StringBuilder sb, string typeName, string telemetryTypeName, GraphQlOperation[] operations, string contractsNamespace, string operationTypeName)
     {
+        sb.AppendLine($"[global::HotChocolate.Types.ExtendObjectTypeAttribute(global::HotChocolate.Types.OperationTypeNames.{operationTypeName})]");
         sb.AppendLine($"public sealed class {typeName}");
         sb.AppendLine("{");
         foreach (var operation in operations)
@@ -200,6 +236,44 @@ public sealed class GraphQlEndpointGenerator : IIncrementalGenerator
         sb.AppendLine("    {");
         sb.AppendLine($"        global::{rootNamespace}.{document.Name}.Endpoints.GeneratedOpenApiEndpointRouteBuilderExtensions.MapGeneratedOpenApiEndpoints(endpoints);");
         sb.AppendLine($"        global::{rootNamespace}.{document.Name}.GraphQl.GeneratedGraphQlEndpointRouteBuilderExtensions.MapGeneratedGraphQlEndpoints(endpoints);");
+        sb.AppendLine("        return endpoints;");
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    private static string EmitAggregateTransportExtensions(IReadOnlyList<GraphQlDocument> documents, string rootNamespace)
+    {
+        var sb = Header(rootNamespace);
+        sb.AppendLine("public static class GeneratedTransportLayerExtensions");
+        sb.AppendLine("{");
+        sb.AppendLine("    public static global::Microsoft.AspNetCore.Builder.WebApplicationBuilder AddGeneratedTransportLayers(this global::Microsoft.AspNetCore.Builder.WebApplicationBuilder builder)");
+        sb.AppendLine("    {");
+        foreach (var document in documents)
+        {
+            sb.AppendLine($"        global::{rootNamespace}.{document.Name}.GeneratedTransportLayerExtensions.AddGeneratedTransportLayers(builder);");
+        }
+
+        sb.AppendLine("        return builder;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public static global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapGeneratedTransportLayers(this global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints)");
+        sb.AppendLine("    {");
+        foreach (var document in documents)
+        {
+            sb.AppendLine($"        global::{rootNamespace}.{document.Name}.GeneratedTransportLayerExtensions.MapGeneratedTransportLayers(endpoints);");
+        }
+
+        sb.AppendLine("        return endpoints;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine("    public static global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder MapGeneratedGraphQlPlayground(this global::Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints)");
+        sb.AppendLine("    {");
+        foreach (var document in documents)
+        {
+            sb.AppendLine($"        global::{rootNamespace}.{document.Name}.GraphQl.GeneratedGraphQlEndpointRouteBuilderExtensions.MapGeneratedGraphQlPlayground(endpoints);");
+        }
+
         sb.AppendLine("        return endpoints;");
         sb.AppendLine("    }");
         sb.AppendLine("}");

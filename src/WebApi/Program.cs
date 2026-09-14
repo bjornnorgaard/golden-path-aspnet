@@ -1,6 +1,5 @@
+using WebApi;
 using WebApi.Configurations;
-using WebApi.Todos;
-using WebApi.Todos.GraphQl;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 builder.AddPlatformForwardedHeaders();
