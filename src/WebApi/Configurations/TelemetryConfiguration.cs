@@ -66,8 +66,8 @@ public static class TelemetryConfiguration
     }
 
     private static bool IsHealthCheckPath(PathString path) =>
-        path.Equals(HealthCheckConfiguration.LivenessPath, StringComparison.OrdinalIgnoreCase) ||
-        path.Equals(HealthCheckConfiguration.ReadinessPath, StringComparison.OrdinalIgnoreCase);
+        string.Equals(path.Value, HealthCheckConfiguration.LivenessPath, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(path.Value, HealthCheckConfiguration.ReadinessPath, StringComparison.OrdinalIgnoreCase);
 
     private sealed class GraphQlOperationNameProcessor : BaseProcessor<Activity>
     {
