@@ -40,16 +40,11 @@ public static class AuthenticationConfiguration
 
                     google.Events.OnCreatingTicket = async context =>
                     {
-                        var email = context.Principal?.FindFirst(ClaimTypes.Email)?.Value
-                                    ?? context.Principal?.FindFirst("email")?.Value;
-                        var displayName = context.Principal?.FindFirst(ClaimTypes.Name)?.Value
-                                          ?? context.Principal?.FindFirst("name")?.Value;
-                        var givenName = context.Principal?.FindFirst(ClaimTypes.GivenName)?.Value
-                                        ?? context.Principal?.FindFirst("given_name")?.Value;
-                        var familyName = context.Principal?.FindFirst(ClaimTypes.Surname)?.Value
-                                         ?? context.Principal?.FindFirst("family_name")?.Value;
-                        var avatarUrl = context.Principal?.FindFirst("picture")?.Value
-                                        ?? context.Principal?.FindFirst("urn:google:image_url")?.Value;
+                        var email = context.Principal?.FindFirst(ClaimTypes.Email)?.Value ?? context.Principal?.FindFirst("email")?.Value;
+                        var displayName = context.Principal?.FindFirst(ClaimTypes.Name)?.Value ?? context.Principal?.FindFirst("name")?.Value;
+                        var givenName = context.Principal?.FindFirst(ClaimTypes.GivenName)?.Value ?? context.Principal?.FindFirst("given_name")?.Value;
+                        var familyName = context.Principal?.FindFirst(ClaimTypes.Surname)?.Value ?? context.Principal?.FindFirst("family_name")?.Value;
+                        var avatarUrl = context.Principal?.FindFirst("picture")?.Value ?? context.Principal?.FindFirst("urn:google:image_url")?.Value;
 
                         if (!string.IsNullOrWhiteSpace(email))
                         {
