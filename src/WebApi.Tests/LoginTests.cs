@@ -46,15 +46,28 @@ public sealed class LoginTests : TestBase
     }
 
     [Test]
-    [Arguments("apple")]
+    [Arguments("/login?provider=apple")]
+    [Arguments("/login?provider=APPLE")]
+    public async Task Login_WithAppleProvider_ChallengesApple(string path)
+    {
+        // Act
+        var response = await AnonymousClient.GetAsync(path);
+
+        // Assert: a challenge redirects straight to Apple's own authorize endpoint.
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Redirect);
+        await Assert.That(response.Headers.Location?.Host).Contains("appleid.apple.com");
+    }
+
+    [Test]
     [Arguments("twitter")]
+    [Arguments("microsoft")]
     public async Task Login_WithUnsupportedProvider_ReturnsBadRequestWithoutChallenging(string provider)
     {
         // Act
         var response = await AnonymousClient.GetAsync($"/login?provider={provider}");
 
-        // Assert: rejected before any external redirect - Apple isn't wired up yet, and an unknown
-        // provider must never fall back to challenging Google by surprise.
+        // Assert: rejected before any external redirect - an unknown provider must never fall back
+        // to challenging Google by surprise.
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
     }
 

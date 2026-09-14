@@ -3,7 +3,7 @@
 A .NET 10 ASP.NET Core minimal API reference application — a "golden path" showing how a
 production-shaped service fits together: source-generated endpoint/service/config registration,
 REST and GraphQL over the same feature handlers, EF Core on PostgreSQL, background jobs, OpenTelemetry,
-and Google/Facebook-based auth in front of all of it (Apple to follow).
+and Google/Facebook/Apple-based auth in front of all of it.
 
 The example domain is a small Todo API (create/get/list/update/toggle/delete, plus scheduled
 reminder and sweep jobs), which exists to exercise the plumbing rather than as a feature in itself.
@@ -44,9 +44,11 @@ dotnet run --project src/WebApi
 The app listens on `http://localhost:5200` by default. The Aspire dashboard (logs/traces/spans) is
 at `http://localhost:18888`.
 
-Complete the [Google OAuth setup](#one-time-setup-register-a-google-oauth-client) and/or the
-[Facebook Login setup](#one-time-setup-register-a-facebook-login-app) below before logging in for
-the first time.
+Complete the [Google OAuth setup](#one-time-setup-register-a-google-oauth-client), the
+[Facebook Login setup](#one-time-setup-register-a-facebook-login-app), and/or the
+[Sign in with Apple setup](#one-time-setup-register-a-sign-in-with-apple-service-id) below before
+logging in for the first time. Apple's redirect URI must be a publicly-reachable HTTPS domain (see
+that section), so Google or Facebook are the simpler choice for local development.
 
 ### Common commands
 
@@ -99,11 +101,47 @@ For a deployed environment, supply the values as environment variables
 For a deployed environment, supply the values as environment variables
 (`Authentication__Facebook__ClientId` / `Authentication__Facebook__ClientSecret`).
 
+### One-time setup: register a Sign in with Apple Service ID
+
+Sign in with Apple has more moving parts than Google/Facebook: instead of a static client secret,
+Apple requires a JWT signed with an EC private key, regenerated per token exchange (handled for us
+by [`AspNet.Security.OAuth.Apple`](https://github.com/aspnet-contrib/AspNet.Security.OAuth.Providers)).
+
+1. In the [Apple Developer portal](https://developer.apple.com/account/resources/identifiers/list),
+   register an App ID with the "Sign in with Apple" capability enabled, then create a **Services ID**
+   — this Services ID (e.g. `com.example.goldenpath.signin`), not the app's bundle ID, is the
+   `ClientId`.
+2. Configure that Services ID's "Sign in with Apple" settings with your domain and a Return URL:
+   - Apple does **not** accept `http://localhost` as a Return URL — it must be a publicly-reachable
+     HTTPS domain (e.g. via a tunnel like `ngrok` for local testing, or your deployed domain):
+     `https://<your-domain>/auth/callback/apple`
+3. Under Keys, create a new key with "Sign in with Apple" enabled and download the resulting
+   `AuthKey_<KeyId>.p8` file — **Apple only lets you download it once**. Note the Key ID (from the
+   filename) and your Team ID (top-right of the developer portal).
+4. Store the Services ID, Team ID, Key ID, and the private key's raw file contents locally with
+   `dotnet user-secrets` — never commit them to `appsettings.json`:
+
+   ```bash
+   dotnet user-secrets set "Authentication:Apple:ClientId" "<services-id>" --project src/WebApi
+   dotnet user-secrets set "Authentication:Apple:TeamId" "<team-id>" --project src/WebApi
+   dotnet user-secrets set "Authentication:Apple:KeyId" "<key-id>" --project src/WebApi
+   dotnet user-secrets set "Authentication:Apple:PrivateKey" "$(cat AuthKey_<key-id>.p8)" --project src/WebApi
+   ```
+
+For a deployed environment, supply the values as environment variables
+(`Authentication__Apple__ClientId` / `Authentication__Apple__TeamId` / `Authentication__Apple__KeyId`
+/ `Authentication__Apple__PrivateKey`, the last carrying the `.p8` file's contents verbatim,
+newlines included).
+
 ### How it works
 
 - Logging in (`/login`) redirects to Google OAuth by default, then back to
-  `/auth/callback/google`. Pass `/login?provider=facebook` to sign in with Facebook instead
-  (redirects to `/auth/callback/facebook`). Apple sign-in is planned but not yet implemented.
+  `/auth/callback/google`. Pass `/login?provider=facebook` or `/login?provider=apple` to sign in
+  with Facebook or Apple instead (redirecting back to `/auth/callback/facebook` or
+  `/auth/callback/apple` respectively).
+- Apple only ever sends the user's name once, on the very first authorization for a given app — it
+  arrives as a `user` form field alongside the callback rather than as a token claim, and is parsed
+  in `AuthenticationConfiguration.ParseAppleUserName`. Subsequent Apple logins carry no name at all.
 - A global authorization fallback policy requires an authenticated session for any endpoint that
   doesn't explicitly opt out — only `/login`, `/logout`, and `/access-denied` are anonymous.
 - `POST /logout` clears the session cookie.

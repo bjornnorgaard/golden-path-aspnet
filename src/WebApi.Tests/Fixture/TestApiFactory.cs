@@ -23,16 +23,20 @@ public sealed class TestApiFactory : TestWebApplicationFactory<Program>
 
         builder.UseSetting("Cors:AllowedOrigins:0", "https://allowed.test");
 
-        // The Google and Facebook schemes still get constructed on every request (ASP.NET Core's
-        // authentication middleware probes every registered remote-auth scheme to see if the request
-        // matches its callback path), so their options must pass OAuthOptions.Validate() even though
-        // neither provider is ever exercised in tests.
+        // The Google, Facebook, and Apple schemes still get constructed on every request (ASP.NET
+        // Core's authentication middleware probes every registered remote-auth scheme to see if the
+        // request matches its callback path), so their options must pass validation even though no
+        // provider is ever exercised in tests.
         builder.UseSetting("Authentication:Google:ClientId", "test-client-id");
         builder.UseSetting("Authentication:Google:ClientSecret", "test-client-secret");
         builder.UseSetting("Authentication:Facebook:ClientId", "test-client-id");
         builder.UseSetting("Authentication:Facebook:ClientSecret", "test-client-secret");
+        builder.UseSetting("Authentication:Apple:ClientId", "test-client-id");
+        builder.UseSetting("Authentication:Apple:TeamId", "test-team-id");
+        builder.UseSetting("Authentication:Apple:KeyId", "test-key-id");
+        builder.UseSetting("Authentication:Apple:PrivateKey", "test-private-key");
 
-        // Swap the real Google/Facebook/cookie login for a fake scheme that authenticates every
+        // Swap the real Google/Facebook/Apple/cookie login for a fake scheme that authenticates every
         // request as the test user, so tests exercise the real fallback authorization policy
         // without driving an actual OAuth flow.
         builder.ConfigureTestServices(services =>
