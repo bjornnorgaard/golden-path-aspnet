@@ -7,7 +7,10 @@ namespace WebApi.Tests;
 /// <summary>
 /// Verifies /login's provider selection (see AuthenticationConfiguration.UsePlatformAuthentication):
 /// which external scheme gets challenged for a given `provider` query value, and that an
-/// unrecognized provider is rejected before any challenge is issued.
+/// unrecognized or not-wired-up provider is rejected before any challenge is issued. Program.cs
+/// only calls AddGoogleAuthentication today (see AuthenticationConfigurationTests for
+/// Facebook/Apple's own extension-method behavior), so Facebook and Apple behave the same as any
+/// other name /login doesn't recognize.
 /// </summary>
 public sealed class LoginTests : TestBase
 {
@@ -33,41 +36,18 @@ public sealed class LoginTests : TestBase
     }
 
     [Test]
-    [Arguments("/login?provider=facebook")]
-    [Arguments("/login?provider=FACEBOOK")]
-    public async Task Login_WithFacebookProvider_ChallengesFacebook(string path)
-    {
-        // Act
-        var response = await AnonymousClient.GetAsync(path);
-
-        // Assert: a challenge redirects straight to Facebook's own authorize endpoint.
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Redirect);
-        await Assert.That(response.Headers.Location?.Host).Contains("facebook.com");
-    }
-
-    [Test]
-    [Arguments("/login?provider=apple")]
-    [Arguments("/login?provider=APPLE")]
-    public async Task Login_WithAppleProvider_ChallengesApple(string path)
-    {
-        // Act
-        var response = await AnonymousClient.GetAsync(path);
-
-        // Assert: a challenge redirects straight to Apple's own authorize endpoint.
-        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Redirect);
-        await Assert.That(response.Headers.Location?.Host).Contains("appleid.apple.com");
-    }
-
-    [Test]
     [Arguments("twitter")]
     [Arguments("microsoft")]
-    public async Task Login_WithUnsupportedProvider_ReturnsBadRequestWithoutChallenging(string provider)
+    [Arguments("facebook")]
+    [Arguments("apple")]
+    public async Task Login_WithUnavailableProvider_ReturnsBadRequestWithoutChallenging(string provider)
     {
         // Act
         var response = await AnonymousClient.GetAsync($"/login?provider={provider}");
 
-        // Assert: rejected before any external redirect - an unknown provider must never fall back
-        // to challenging Google by surprise.
+        // Assert: rejected before any external redirect, whether the name is entirely unknown
+        // (twitter/microsoft) or recognized but never wired up in Program.cs (facebook/apple) - an
+        // unavailable provider must never fall back to challenging Google by surprise.
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
     }
 
@@ -76,10 +56,10 @@ public sealed class LoginTests : TestBase
     {
         // Act: `returnUrl` is carried through AuthenticationProperties rather than affecting which
         // provider gets challenged - a smoke check that the two query parameters don't interfere.
-        var response = await AnonymousClient.GetAsync("/login?provider=facebook&returnUrl=/todos");
+        var response = await AnonymousClient.GetAsync("/login?provider=google&returnUrl=/todos");
 
         // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Redirect);
-        await Assert.That(response.Headers.Location?.Host).Contains("facebook.com");
+        await Assert.That(response.Headers.Location?.Host).Contains("google.com");
     }
 }

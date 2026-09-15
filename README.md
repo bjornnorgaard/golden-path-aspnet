@@ -67,6 +67,15 @@ Integration tests require Docker (Testcontainers starts PostgreSQL for them). Se
 Every request into the service — REST endpoints, GraphQL, the Hangfire dashboard, and the
 Scalar/OpenAPI docs — requires an authenticated session.
 
+Google is the only provider wired up today - `Program.cs` calls `AddGoogleAuthentication()` and
+leaves `AddFacebookAuthentication()`/`AddAppleAuthentication()` commented out. Each provider is its
+own extension method in `AuthenticationConfiguration`, so a provider is "enabled" purely by whether
+Program.cs calls it: calling one commits to that provider being fully configured and throws
+immediately at startup if a required setting below was left blank, rather than registering it
+half-configured. To turn on Facebook or Apple once their credentials exist, uncomment its call in
+`Program.cs`. Until then, `/login?provider=facebook` or `?provider=apple` returns
+`400 Bad Request` instead of challenging it.
+
 ### One-time setup: register a Google OAuth Client
 
 1. Go to the [Google Cloud Console Credentials page](https://console.cloud.google.com/apis/credentials).
@@ -84,7 +93,7 @@ Scalar/OpenAPI docs — requires an authenticated session.
 For a deployed environment, supply the values as environment variables
 (`Authentication__Google__ClientId` / `Authentication__Google__ClientSecret`).
 
-### One-time setup: register a Facebook Login app
+### One-time setup: register a Facebook Login app (optional)
 
 1. Go to the [Meta for Developers apps page](https://developers.facebook.com/apps/) and create an
    app with the Facebook Login product added.
@@ -101,7 +110,7 @@ For a deployed environment, supply the values as environment variables
 For a deployed environment, supply the values as environment variables
 (`Authentication__Facebook__ClientId` / `Authentication__Facebook__ClientSecret`).
 
-### One-time setup: register a Sign in with Apple Service ID
+### One-time setup: register a Sign in with Apple Service ID (optional)
 
 Sign in with Apple has more moving parts than Google/Facebook: instead of a static client secret,
 Apple requires a JWT signed with an EC private key, regenerated per token exchange (handled for us
@@ -138,7 +147,9 @@ newlines included).
 - Logging in (`/login`) redirects to Google OAuth by default, then back to
   `/auth/callback/google`. Pass `/login?provider=facebook` or `/login?provider=apple` to sign in
   with Facebook or Apple instead (redirecting back to `/auth/callback/facebook` or
-  `/auth/callback/apple` respectively).
+  `/auth/callback/apple` respectively) — provided that provider's `Add{Provider}Authentication` call
+  is uncommented in `Program.cs`; otherwise the request is rejected the same way an unrecognized
+  `provider` value is.
 - Apple only ever sends the user's name once, on the very first authorization for a given app — it
   arrives as a `user` form field alongside the callback rather than as a token claim, and is parsed
   in `AuthenticationConfiguration.ParseAppleUserName`. Subsequent Apple logins carry no name at all.

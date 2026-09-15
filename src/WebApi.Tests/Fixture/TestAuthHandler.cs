@@ -38,9 +38,12 @@ public sealed class TestAuthHandler(
 
         var db = Context.RequestServices.GetRequiredService<TodoContext>();
         await db.Database.ExecuteSqlRawAsync(
+            // Unqualified DO NOTHING (rather than ON CONFLICT ("Id")) so a race between two hosts'
+            // very first authenticated request - each targeting this same fixed row - can't still
+            // trip the separate unique index on Email once the Id-only conflict is resolved.
             @"INSERT INTO ""Users"" (""Id"", ""Email"", ""DisplayName"", ""GivenName"", ""FamilyName"", ""AvatarUrl"")
               VALUES ('11111111-1111-1111-1111-111111111111', 'test-user@example.com', 'test-user', 'Test', 'User', 'https://example.com/avatar.png')
-              ON CONFLICT (""Id"") DO NOTHING;",
+              ON CONFLICT DO NOTHING;",
             Context.RequestAborted);
 
         var identity = new ClaimsIdentity([
