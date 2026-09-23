@@ -22,18 +22,18 @@
         <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
         <PackageVersion Include="Npgsql" Version="10.0.3" />
         <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-        <PackageVersion Include="OpenTelemetry" Version="1.18.0" />
-        <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
-        <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0" />
-        <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0" />
-        <PackageVersion Include="OpenTelemetry.Instrumentation.Hangfire" Version="1.18.0-beta.1" />
-        <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0" />
-        <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
-        <PackageVersion Include="Scalar.AspNetCore" Version="2.17.3" />
+        <PackageVersion Include="OpenTelemetry" Version="1.19.1" />
+        <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+        <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.Hangfire" Version="1.19.0-beta.1" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+        <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
+        <PackageVersion Include="Scalar.AspNetCore" Version="2.17.8" />
         <PackageVersion Include="System.Text.Json" Version="10.0.12" />
         <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
-        <PackageVersion Include="TUnit" Version="1.67.0" />
-        <PackageVersion Include="TUnit.AspNetCore" Version="1.67.0" />
+        <PackageVersion Include="TUnit" Version="1.69.0" />
+        <PackageVersion Include="TUnit.AspNetCore" Version="1.69.0" />
     </ItemGroup>
 
 </Project>
