@@ -10,8 +10,8 @@
         <PackageVersion Include="FluentValidation" Version="12.1.1" />
         <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.25" />
         <PackageVersion Include="Hangfire.PostgreSql" Version="1.21.1" />
-        <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.6" />
-        <PackageVersion Include="HotChocolate.Data" Version="16.6.6" />
+        <PackageVersion Include="HotChocolate.AspNetCore" Version="16.6.7" />
+        <PackageVersion Include="HotChocolate.Data" Version="16.6.7" />
         <PackageVersion Include="Microsoft.AspNetCore.Authentication.Facebook" Version="10.0.12" />
         <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.12" />
         <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.12" />
@@ -29,11 +29,11 @@
         <PackageVersion Include="OpenTelemetry.Instrumentation.Hangfire" Version="1.19.0-beta.1" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
-        <PackageVersion Include="Scalar.AspNetCore" Version="2.17.8" />
+        <PackageVersion Include="Scalar.AspNetCore" Version="2.17.13" />
         <PackageVersion Include="System.Text.Json" Version="10.0.12" />
         <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
-        <PackageVersion Include="TUnit" Version="1.69.0" />
-        <PackageVersion Include="TUnit.AspNetCore" Version="1.69.0" />
+        <PackageVersion Include="TUnit" Version="1.72.16" />
+        <PackageVersion Include="TUnit.AspNetCore" Version="1.72.16" />
     </ItemGroup>
 
 </Project>
