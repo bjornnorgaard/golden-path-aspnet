@@ -1,0 +1,81 @@
+// The gRPC contract mirrors the operations in the OpenAPI and GraphQL todos contracts. Field presence follows the other contracts:
+// `optional` and message-typed fields are nullable, everything else is required.
+//
+// Errors: a business-rule violation is INVALID_ARGUMENT with a google.rpc.BadRequest
+// detail (one FieldViolation per message, field = the request property in camelCase); a missing todo is
+// NOT_FOUND; a missing session is UNAUTHENTICATED. Nothing else is documented, and
+// unexpected failures are INTERNAL without detail.
+syntax = "proto3";
+
+package goldenpath.todos.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service TodosService {
+  rpc CreateTodo(CreateTodoRequest) returns (CreateTodoResponse);
+  rpc GetTodoById(GetTodoByIdRequest) returns (GetTodoByIdResponse);
+  rpc GetTodoList(GetTodoListRequest) returns (GetTodoListResponse);
+  rpc UpdateTodo(UpdateTodoRequest) returns (UpdateTodoResponse);
+  rpc ToggleTodo(ToggleTodoRequest) returns (ToggleTodoResponse);
+  rpc DeleteTodo(DeleteTodoRequest) returns (DeleteTodoResponse);
+}
+
+message Todo {
+  string id = 1;
+  string title = 2;
+  google.protobuf.Timestamp due_by = 3;
+  bool is_complete = 4;
+}
+
+message CreateTodoRequest {
+  string title = 1;
+  google.protobuf.Timestamp due_by = 2;
+}
+
+message CreateTodoResponse {
+  Todo todo = 1;
+}
+
+message GetTodoByIdRequest {
+  string id = 1;
+}
+
+message GetTodoByIdResponse {
+  Todo todo = 1;
+}
+
+message GetTodoListRequest {
+  optional int32 limit = 1;
+  optional int32 offset = 2;
+}
+
+message GetTodoListResponse {
+  repeated Todo todos = 1;
+}
+
+message UpdateTodoRequest {
+  string id = 1;
+  string title = 2;
+  google.protobuf.Timestamp due_by = 3;
+  bool is_complete = 4;
+}
+
+message UpdateTodoResponse {
+  Todo todo = 1;
+}
+
+message ToggleTodoRequest {
+  string id = 1;
+}
+
+message ToggleTodoResponse {
+  Todo todo = 1;
+}
+
+message DeleteTodoRequest {
+  string id = 1;
+}
+
+message DeleteTodoResponse {
+  string id = 1;
+}

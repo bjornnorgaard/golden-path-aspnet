@@ -1,35 +1,91 @@
 # golden-path-aspnet
 
 A .NET 10 ASP.NET Core minimal API reference application — a "golden path" showing how a
-production-shaped service fits together: source-generated endpoint/service/config registration,
-REST and GraphQL over the same feature handlers, EF Core on PostgreSQL, background jobs, OpenTelemetry,
-and Google/Facebook/Apple-based auth in front of all of it.
+production-shaped service fits together: contract-first REST (OpenAPI), GraphQL and gRPC over the same
+feature handlers, source-generated endpoint/service/config registration, EF Core on PostgreSQL,
+Hangfire background jobs, OpenTelemetry, and cookie-session auth (Google sign-in wired up; Facebook and
+Apple available) in front of all of it.
 
 The example domain is a small Todo API (create/get/list/update/toggle/delete, plus scheduled
 reminder and sweep jobs), which exists to exercise the plumbing rather than as a feature in itself.
 
 ## Architecture
 
-- `src/WebApi` — the application: feature handlers, database context and migrations, JSON
-  configuration, and startup wiring. Endpoints, services, configuration, and telemetry are
-  registered via Roslyn source generators rather than hand-written `Startup`/`Program` boilerplate.
-- `src/WebApi.Platform` — reusable cross-cutting setup (telemetry, OpenAPI, exception handling)
-  shared by the application.
-- `src/Generators/Generators` — the source generators consumed as analyzers by the projects above.
+- `src/WebApi` — the application: feature handlers, database context and migrations, and startup
+  wiring. Endpoints, services, configuration, and telemetry are registered via Roslyn source
+  generators rather than hand-written `Startup`/`Program` boilerplate.
+  - `Contracts/` — the hand-written source of truth: `OpenApi/*.openapi.yaml` (REST),
+    `GraphQL/*.graphql` and `Grpc/**/*.proto`.
+  - `Features/` — one folder per operation (see below).
+  - `Configurations/` — reusable cross-cutting setup, one static class per concern (authentication,
+    CORS, forwarded headers, exception handling, health checks, telemetry, Hangfire, OpenAPI docs,
+    gRPC, database). `Program.cs` just calls them in order.
+- `src/Generators/Generators` — the source generators consumed as analyzers by `WebApi`: OpenAPI and
+  GraphQL endpoints (plus request validators), service registration, strongly typed IDs, typed
+  configuration from `appsettings.json`, and telemetry tag helpers. `Generators.Tests` covers them.
 - `src/WebApi.Tests` — TUnit integration tests that run the API in-memory against a real
-  PostgreSQL via Testcontainers, exercised through its public HTTP interface.
+  PostgreSQL via Testcontainers, exercised through its public HTTP (and gRPC) interface.
 - `src/Benchmarks` — BenchmarkDotNet microbenchmarks.
 - `k6/` — k6 load tests for the REST and GraphQL transports, used to catch performance regressions
   (see [k6/README.md](k6/README.md)).
 - `deploy/mimir` — deployment manifests for the operator's Kubernetes homelab platform ("Mimir"),
   which this service runs on.
 
-Each feature (e.g. `src/WebApi/Features/Todos/CreateTodo`) is a self-contained vertical slice:
-request/response DTOs, a FluentValidation validator, and a handler exposed over both REST and
-GraphQL from the same code.
+### Contract-first
 
-Every request — REST endpoints, GraphQL, the Hangfire dashboard, and the Scalar/OpenAPI docs —
-requires an authenticated session, as described below.
+The contracts are written by hand; the compiler and generators then hold the code to them:
+
+| Contract | Generated | What the compiler/tests enforce |
+| --- | --- | --- |
+| `Contracts/OpenApi/*.openapi.yaml` | request/response types, `I<Operation>Endpoint` interfaces, route mapping, and a FluentValidation validator per request from the schema constraints (`minLength`, `pattern`, `minimum`, ...) | An operation without an implementing class is a generator diagnostic (build error: warnings are errors). |
+| `Contracts/GraphQL/*.graphql` | the HotChocolate root types and `I<Operation>Resolver` interfaces | Same, for resolvers. |
+| `Contracts/Grpc/**/*.proto` | messages and abstract service bases (`Grpc.Tools`, at build time) | `GrpcTests.EveryRpcInTheContract_IsImplemented` fails if an RPC has no override (the generated bases answer `UNIMPLEMENTED` instead of failing the build). |
+| `appsettings.json` | typed configuration (`GetPaging()`, `GetGrpc()`, ...) | |
+
+Validation rules therefore live in the OpenAPI contract, not in hand-written validators; the REST
+endpoints, the GraphQL resolvers and the gRPC services all apply the same generated validators.
+
+### Features
+
+Each operation (e.g. `src/WebApi/Features/Todos/CreateTodo`) is a vertical slice exposed over REST,
+GraphQL and gRPC from the same code:
+
+- `CreateTodoHandler` — the business logic (`[Service]`, registered by a generator).
+- `CreateTodoEndpoint` — implements the generated `ICreateTodoEndpoint` (REST).
+- `CreateTodoResolver` — implements the generated `ICreateTodoResolver` (GraphQL).
+- `TodosGrpcService` / `UsersGrpcService` (one per resource, next to the operation folders) — implement
+  the generated gRPC service bases by calling the same handlers.
+
+Adapters only map types; they hold no rules of their own.
+
+Every request — REST endpoints, GraphQL, gRPC, the Hangfire dashboard, and the Scalar/OpenAPI docs —
+requires an authenticated session, as described below. The only exceptions are the login/logout/
+access-denied routes and the health probes (`/healthz`, `/readyz` and the standard gRPC health service).
+
+## gRPC
+
+gRPC is the third transport over the same handlers. The contracts are
+`src/WebApi/Contracts/Grpc/goldenpath/{todos,users}/v1/*.proto` (the same `.proto` files as
+[golden-path-go](../golden-path-go), so one client works against both).
+
+- **Enabling:** gRPC needs HTTP/2, which Kestrel only offers on a dedicated cleartext endpoint, so it is
+  off until `Grpc:Port` is set (`Grpc__Port=9090`). The configured HTTP addresses (`URLS` /
+  `HTTP_PORTS`) keep serving REST and GraphQL. Terminate TLS in front of the gRPC port, as for HTTP.
+  `Grpc:ReflectionEnabled=true` adds gRPC reflection (still authenticated).
+- **Authentication:** the same cookie session as everywhere else; send it as `cookie` metadata. Unlike
+  browsers, gRPC clients are answered with `401` (`UNAUTHENTICATED`) instead of a redirect to `/login`.
+  Only the standard `grpc.health.v1.Health` service is anonymous; the allow-list is pinned by
+  `GrpcTests`.
+- **Errors:** an invalid request is `INVALID_ARGUMENT` with a `google.rpc.BadRequest` detail (field =
+  camelCase request property), a missing entity is `NOT_FOUND`, anything unexpected is a generic
+  `INTERNAL` (the detail goes to the log and trace).
+
+```bash
+Grpc__Port=9090 dotnet run --project src/WebApi
+grpcurl -plaintext -H "Cookie: $COOKIE" -d '{"title":"hello"}' localhost:9090 goldenpath.todos.v1.TodosService/CreateTodo
+```
+
+Not covered yet: the k6 suites and the Mimir manifests (no gRPC port is declared there).
 
 ## Running locally
 
@@ -57,6 +113,7 @@ dotnet restore src/GoldenPathAspnet.slnx
 dotnet build src/GoldenPathAspnet.slnx --no-restore
 dotnet test --solution src/GoldenPathAspnet.slnx --no-build
 dotnet run --project src/WebApi/WebApi.csproj
+dotnet tool restore --tool-manifest src/dotnet-tools.json   # dotnet-ef, for migrations
 ```
 
 Integration tests require Docker (Testcontainers starts PostgreSQL for them). See
@@ -154,5 +211,7 @@ newlines included).
   arrives as a `user` form field alongside the callback rather than as a token claim, and is parsed
   in `AuthenticationConfiguration.ParseAppleUserName`. Subsequent Apple logins carry no name at all.
 - A global authorization fallback policy requires an authenticated session for any endpoint that
-  doesn't explicitly opt out — only `/login`, `/logout`, and `/access-denied` are anonymous.
+  doesn't explicitly opt out — `/login`, `/logout`, `/access-denied` and the health probes
+  (`/healthz`, `/readyz`, gRPC health) are anonymous. Any Google account that can sign in is given a
+  user and a session; there is no further allow-list or role check.
 - `POST /logout` clears the session cookie.

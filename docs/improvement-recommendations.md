@@ -1,27 +1,40 @@
 # Improvement recommendations
 
-Gaps identified in the current reference app, grouped by area. Priority order: auth pattern + Hangfire dashboard auth first (missing on day one for anyone copying this template), then the startup-safety items (dev tooling exposure, auto-migration), then Dependabot/CodeQL/rate limiting/resilience.
+Gaps in the current reference app, grouped by area. Items are checked against the code (last review:
+when gRPC was added); finished ones stay listed, marked `[x]`, so it is clear what changed since the
+original list.
 
 ## Security
 
-- [ ] No authentication/authorization anywhere — add an `[Authorize]`-capable pattern (even a simple JWT/API-key scheme) so teams copying this template don't ship an open API by default.
+- [x] ~~No authentication/authorization anywhere~~ — done: cookie sessions with Google sign-in (Facebook and Apple are implemented but not enabled in `Program.cs`) and a global fallback policy that requires an authenticated user for every endpoint (REST, GraphQL, gRPC, Hangfire dashboard, docs) except the explicitly anonymous ones. Pinned by `RouteAuthorizationTests` and `GrpcTests`.
+- [ ] **Authorization beyond "signed in".** Any Google account that completes the login is provisioned as a user and gets a session (`AuthenticationConfiguration.UpsertUserAsync`); there is no allow-list, role or ownership check, so every signed-in user can read and change every todo and user, and open the Hangfire dashboard. Decide the intended model (allow-listed domains/emails, roles, per-owner access) before copying this template.
+- [ ] **Non-browser clients.** The only scheme is a browser cookie session, which suits neither gRPC clients nor service-to-service REST calls. Add a bearer/API-key scheme (the fallback policy already accepts any authentication scheme that succeeds).
 - [ ] No rate limiting (`Microsoft.AspNetCore.RateLimiting` is built into ASP.NET Core, no extra dependency needed).
-- [ ] Hangfire dashboard is enabled (`DashboardEnabled: true`) with no authorization filter — `src/WebApi/Configurations/HangfireConfiguration.cs` should require an authorization filter before exposing `/hangfire`.
+- [x] ~~Hangfire dashboard has no authorization filter~~ — it is behind the fallback policy, and mapped only when `Hangfire:DashboardEnabled` is true. (It is still open to any signed-in user, see the authorization item above.)
 - [ ] Default DB credentials live in plaintext in `src/WebApi/appsettings.json` — fine for a sample, but the README should steer real deployments to user-secrets/Key Vault.
-- [ ] The Scalar API reference (`MapPlatformOpenApi`) and GraphQL Playground (`MapGeneratedGraphQlPlayground`) are mapped unconditionally in [Program.cs](src/WebApi/Program.cs), with no `IsDevelopment()` or config-toggle gate like Hangfire's `DashboardEnabled` — both are exposed in Production by default.
+- [ ] The Scalar API reference (`MapPlatformOpenApi`) and the GraphQL playground are mapped unconditionally in [Program.cs](../src/WebApi/Program.cs), with no `IsDevelopment()` or config-toggle gate like Hangfire's `DashboardEnabled`. They require authentication, but are exposed in Production by default. gRPC reflection, by contrast, is opt-in (`Grpc:ReflectionEnabled`).
 
 ## Reliability
 
-- [ ] No resilience policies around outbound calls (Hangfire jobs, DB) — `Microsoft.Extensions.Http.Resilience` (Polly-based, MS-supported) fits the AOT-friendly, source-generator-heavy style already used here.
-- [ ] `UseDatabase()` in [DatabaseConfiguration.cs](src/WebApi/Configurations/DatabaseConfiguration.cs) calls `dbContext.Database.Migrate()` on every app startup, unconditionally and with no environment gate — scaling to multiple instances races them to apply migrations concurrently, and there's no separation between "apply schema" and "start serving traffic."
+- [ ] No resilience policies around outbound calls (Hangfire jobs, DB) — `Microsoft.Extensions.Http.Resilience` (Polly-based, MS-supported) fits the source-generator-heavy style already used here.
+- [~] `UseDatabase()` in [DatabaseConfiguration.cs](../src/WebApi/Configurations/DatabaseConfiguration.cs) migrates on every startup. Concurrent instances no longer race (the migration runs under a Postgres advisory lock), but there is still no environment gate and no separation between "apply schema" and "start serving traffic".
+- [ ] Background jobs are scheduled through a second client after the request's own `SaveChanges` (for example `CreateTodoHandler`), so a crash between the two leaves a todo without its reminder, and the two use separate connections. Enqueue in the same transaction as the write (check whether Hangfire.PostgreSql's transaction-enlistment options fit), or use a transactional outbox.
+
+## API surface
+
+- [ ] No API versioning strategy for the REST or GraphQL endpoints — decide now before there are real consumers. (The gRPC contract is already versioned in its package, `goldenpath.*.v1`.)
+- [ ] Contract breaking-change checks in CI: nothing compares the OpenAPI, GraphQL or `.proto` contracts against `main` (golden-path-go runs `oasdiff` and `buf breaking`).
+- [ ] The REST and GraphQL todo/user list operations disagree on negative offsets (users clamp to 0, todos are rejected by the contract's `minimum`). Pick one rule and put it in the contract.
 
 ## CI/CD
 
 - [ ] No code coverage collection/upload in CI.
 - [ ] No Dependabot config for keeping the pinned packages in `src/Directory.Packages.props` current.
 - [ ] No CodeQL/security scanning workflow.
-- [ ] No workflow step builds/publishes the Docker image, even though `src/WebApi/Dockerfile` exists — add a `docker build` smoke-test job at minimum.
+- [x] ~~No workflow step builds/publishes the Docker image~~ — done: the `image` job in `build-and-test.yml` builds it (and pushes on `main`).
+- [ ] gRPC is not part of the k6 load tests or of the Mimir manifests (no gRPC port is declared there yet).
 
-## API surface
+## Tests
 
-- [ ] No API versioning strategy for the REST or GraphQL endpoints — decide now before there are real consumers.
+- [ ] `TestAuthHandler` inserts the shared test user on every authenticated request; with many hosts running in parallel this occasionally fails with a `duplicate key value violates unique constraint "IX_Users_Email"` (seen once in a full run). Seed the user once per database instead.
+- [ ] Several assertions match FluentValidation's English messages, so the suite fails on a machine with a non-English culture (it passes with `LANG=en_US.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`). Pin the culture for the test run or assert on the property name only.

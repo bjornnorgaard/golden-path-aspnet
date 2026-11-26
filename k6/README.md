@@ -15,6 +15,7 @@ and throughput.
 - `all.js` — runs both scenarios concurrently against the same target, so the
   REST and GraphQL transports (and the shared handlers/database/telemetry
   behind them) are stressed together.
+- gRPC is not covered by these scripts yet.
 - `lib/helpers.js` — shared, dependency-free helpers (base URL, JSON headers,
   random title/date generators, summary saving).
 - `results/` — Markdown and JSON summaries written by each run (git-ignored);
