@@ -14,7 +14,7 @@ dependencies:
 services:
   webapi:
     image:
-      tag: "26.11.25-23.04-c116db7"    # CI → git SHA on main, see §5
+      tag: "26.11.26-12.29-1396f60"    # CI → git SHA on main, see §5
     ports:
       - name: http
         containerPort: 8080
