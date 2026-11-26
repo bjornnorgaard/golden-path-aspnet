@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using FluentValidation;
 using Goldenpath.Users.V1;
 using Grpc.Core;
 using WebApi.Features.Users.DeleteUser;
@@ -7,6 +8,7 @@ using WebApi.Features.Users.GetUserList;
 using WebApi.Features.Users.UpdateUser;
 using WebApi.Services;
 using WebApi.Telemetry;
+using Rest = WebApi.Users.Contracts;
 using UserId = WebApi.Database.Models.UserId;
 
 namespace WebApi.Features.Users;
@@ -19,7 +21,9 @@ internal sealed class UsersGrpcService(
     GetUserByIdHandler get,
     GetUserListHandler list,
     UpdateUserHandler update,
-    DeleteUserHandler delete) : UsersService.UsersServiceBase
+    DeleteUserHandler delete,
+    IValidator<Rest.GetUserListRequest> listValidator,
+    IValidator<Rest.UpdateUserRequest> updateValidator) : UsersService.UsersServiceBase
 {
     public override async Task<GetUserByIdResponse> GetUserById(GetUserByIdRequest request, ServerCallContext context)
     {
@@ -35,11 +39,11 @@ internal sealed class UsersGrpcService(
 
     public override async Task<GetUserListResponse> GetUserList(GetUserListRequest request, ServerCallContext context)
     {
-        var result = await list.HandleAsync(new GetUserListHandler.Command
-        {
-            Limit = request.HasLimit ? request.Limit : null,
-            Offset = request.HasOffset ? request.Offset : null
-        }, context.CancellationToken);
+        int? limit = request.HasLimit ? request.Limit : null;
+        int? offset = request.HasOffset ? request.Offset : null;
+        await GrpcErrors.ValidateAsync(listValidator, new Rest.GetUserListRequest { Limit = limit, Offset = offset }, context.CancellationToken);
+
+        var result = await list.HandleAsync(new GetUserListHandler.Command { Limit = limit, Offset = offset }, context.CancellationToken);
 
         var response = new GetUserListResponse();
         response.Users.AddRange(result.Users.Select(user =>
@@ -49,14 +53,23 @@ internal sealed class UsersGrpcService(
 
     public override async Task<UpdateUserResponse> UpdateUser(UpdateUserRequest request, ServerCallContext context)
     {
+        var displayName = request.HasDisplayName ? request.DisplayName : null;
+        var givenName = request.HasGivenName ? request.GivenName : null;
+        var familyName = request.HasFamilyName ? request.FamilyName : null;
+        var avatarUrl = request.HasAvatarUrl ? request.AvatarUrl : null;
+        await GrpcErrors.ValidateAsync(
+            updateValidator,
+            new Rest.UpdateUserRequest { Id = request.Id, DisplayName = displayName, GivenName = givenName, FamilyName = familyName, AvatarUrl = avatarUrl },
+            context.CancellationToken);
+
         var userId = ParseId(request.Id);
         var result = await update.HandleAsync(new UpdateUserHandler.Command
         {
             Id = userId,
-            DisplayName = request.HasDisplayName ? request.DisplayName : null,
-            GivenName = request.HasGivenName ? request.GivenName : null,
-            FamilyName = request.HasFamilyName ? request.FamilyName : null,
-            AvatarUrl = request.HasAvatarUrl ? request.AvatarUrl : null
+            DisplayName = displayName,
+            GivenName = givenName,
+            FamilyName = familyName,
+            AvatarUrl = avatarUrl
         }, context.CancellationToken) ?? throw UserNotFound();
 
         return new UpdateUserResponse

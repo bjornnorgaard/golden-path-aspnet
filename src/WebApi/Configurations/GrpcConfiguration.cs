@@ -77,6 +77,13 @@ public static class GrpcConfiguration
     {
         var addresses = new List<Uri>();
 
+        // The app is built with CreateSlimBuilder, which has no HTTPS support; Kestrel fails fast on an
+        // https address when gRPC is off, so do the same instead of quietly binding it as plaintext.
+        if (!string.IsNullOrWhiteSpace(configuration["HTTPS_PORTS"]))
+        {
+            throw new InvalidOperationException("HTTPS_PORTS is not supported: terminate TLS in front of the app (see Grpc:Port).");
+        }
+
         var urls = configuration["URLS"] ?? configuration["urls"];
         if (!string.IsNullOrWhiteSpace(urls))
         {
@@ -85,6 +92,11 @@ public static class GrpcConfiguration
                 // Kestrel's wildcard hosts (*, +) are not valid in a Uri.
                 if (Uri.TryCreate(url.Replace("://*", "://0.0.0.0").Replace("://+", "://0.0.0.0"), UriKind.Absolute, out var uri))
                 {
+                    if (uri.Scheme != Uri.UriSchemeHttp)
+                    {
+                        throw new InvalidOperationException($"URLS contains '{url}': only http addresses are supported, terminate TLS in front of the app (see Grpc:Port).");
+                    }
+
                     addresses.Add(uri);
                 }
             }

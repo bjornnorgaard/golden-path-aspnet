@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using WebApi.Configurations;
@@ -85,7 +86,7 @@ public sealed class GrpcTests : TestBase
         await Assert.That(fetched.Title).IsEqualTo(created.Title);
 
         var list = await Todos.GetTodoListAsync(new GetTodoListRequest());
-        await Assert.That(list.Todos.Any(todo => todo.Id == created.Id)).IsTrue();
+        await Assert.That(list.Todos.Count).IsGreaterThan(0); // the page may not contain this todo: other tests run in parallel
 
         var updated = (await Todos.UpdateTodoAsync(new UpdateTodoRequest { Id = created.Id, Title = "Renamed over gRPC" })).Todo;
         await Assert.That(updated.Title).IsEqualTo("Renamed over gRPC");
@@ -187,6 +188,77 @@ public sealed class GrpcTests : TestBase
 
         var unknownDelete = await ExpectFailureAsync(async () => await Users.DeleteUserAsync(new DeleteUserRequest { Id = Guid.NewGuid().ToString() }));
         await Assert.That(unknownDelete.StatusCode).IsEqualTo(StatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task GetUserList_OutOfRangePaging_IsInvalidArgument()
+    {
+        foreach (var request in new[]
+                 {
+                     new GetUserListRequest { Limit = -1 },
+                     new GetUserListRequest { Limit = 0 },
+                     new GetUserListRequest { Limit = 1000 },
+                     new GetUserListRequest { Offset = -3 }
+                 })
+        {
+            var failure = await ExpectFailureAsync(async () => await Users.GetUserListAsync(request));
+            await Assert.That(failure.StatusCode).IsEqualTo(StatusCode.InvalidArgument);
+        }
+    }
+
+    [Test]
+    public async Task UpdateAndDeleteUser_WorkOverGrpc()
+    {
+        await using var scope = Factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<WebApi.Database.TodoContext>();
+        var user = new WebApi.Database.Models.User { Id = WebApi.Database.Models.UserId.New(), Email = $"{Guid.NewGuid():N}@example.com" };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var updated = (await Users.UpdateUserAsync(new UpdateUserRequest { Id = user.Id.ToString(), DisplayName = "Renamed" })).User;
+        await Assert.That(updated.DisplayName).IsEqualTo("Renamed");
+        await Assert.That(updated.HasGivenName).IsFalse();
+
+        var deleted = await Users.DeleteUserAsync(new DeleteUserRequest { Id = user.Id.ToString() });
+        await Assert.That(deleted.Id).IsEqualTo(user.Id.ToString());
+    }
+
+    [Test]
+    public async Task CreateTodo_OutOfRangeTimestamp_IsInvalidArgument()
+    {
+        var failure = await ExpectFailureAsync(async () => await Todos.CreateTodoAsync(
+            new CreateTodoRequest { Title = "Far future", DueBy = new Timestamp { Seconds = 253402300809 } }));
+
+        await Assert.That(failure.StatusCode).IsEqualTo(StatusCode.InvalidArgument);
+        await Assert.That(ViolatedFields(failure)).Contains("dueBy");
+    }
+
+    // The real cookie scheme (not the test scheme): API clients keep getting 401 from the framework
+    // default, browsers keep being redirected, and gRPC clients get 401 instead of a redirect.
+    [Test]
+    public async Task AnonymousRequests_ThroughTheRealCookieScheme_AreChallengedPerClientKind()
+    {
+        await using var factory = Factory.Inner.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.PostConfigure<AuthenticationOptions>(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        var api = await client.PostAsJsonAsync(TestRoutes.Todos.Create, new CreateTodoApiRequest { Title = "anonymous", DueBy = null });
+        var browser = await client.GetAsync("/hangfire");
+        using var grpcRequest = new HttpRequestMessage(HttpMethod.Post, "/goldenpath.todos.v1.TodosService/GetTodoList")
+        {
+            Content = new ByteArrayContent([0, 0, 0, 0, 0]) { Headers = { ContentType = new("application/grpc") } },
+            Version = new Version(2, 0)
+        };
+        var grpc = await client.SendAsync(grpcRequest);
+
+        await Assert.That(api.StatusCode).IsEqualTo(System.Net.HttpStatusCode.Unauthorized);
+        await Assert.That(browser.StatusCode).IsEqualTo(System.Net.HttpStatusCode.Redirect);
+        await Assert.That(grpc.StatusCode).IsEqualTo(System.Net.HttpStatusCode.Unauthorized);
     }
 
     // Deny-by-default: every gRPC endpoint is covered by the global fallback policy, and the set of

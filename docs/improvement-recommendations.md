@@ -8,7 +8,7 @@ original list.
 
 - [x] ~~No authentication/authorization anywhere~~ — done: cookie sessions with Google sign-in (Facebook and Apple are implemented but not enabled in `Program.cs`) and a global fallback policy that requires an authenticated user for every endpoint (REST, GraphQL, gRPC, Hangfire dashboard, docs) except the explicitly anonymous ones. Pinned by `RouteAuthorizationTests` and `GrpcTests`.
 - [ ] **Authorization beyond "signed in".** Any Google account that completes the login is provisioned as a user and gets a session (`AuthenticationConfiguration.UpsertUserAsync`); there is no allow-list, role or ownership check, so every signed-in user can read and change every todo and user, and open the Hangfire dashboard. Decide the intended model (allow-listed domains/emails, roles, per-owner access) before copying this template.
-- [ ] **Non-browser clients.** The only scheme is a browser cookie session, which suits neither gRPC clients nor service-to-service REST calls. Add a bearer/API-key scheme (the fallback policy already accepts any authentication scheme that succeeds).
+- [ ] **Non-browser clients.** The only scheme is a browser cookie session, which suits neither gRPC clients nor service-to-service REST calls. Add a bearer/API-key scheme. Note the fallback policy is `RequireAuthenticatedUser()` without schemes, so it only consults the default (cookie) scheme: the new scheme must be made the default, or listed in the policy's `AuthenticationSchemes`, or use a policy scheme that forwards between them.
 - [ ] No rate limiting (`Microsoft.AspNetCore.RateLimiting` is built into ASP.NET Core, no extra dependency needed).
 - [x] ~~Hangfire dashboard has no authorization filter~~ — it is behind the fallback policy, and mapped only when `Hangfire:DashboardEnabled` is true. (It is still open to any signed-in user, see the authorization item above.)
 - [ ] Default DB credentials live in plaintext in `src/WebApi/appsettings.json` — fine for a sample, but the README should steer real deployments to user-secrets/Key Vault.
@@ -24,7 +24,7 @@ original list.
 
 - [ ] No API versioning strategy for the REST or GraphQL endpoints — decide now before there are real consumers. (The gRPC contract is already versioned in its package, `goldenpath.*.v1`.)
 - [ ] Contract breaking-change checks in CI: nothing compares the OpenAPI, GraphQL or `.proto` contracts against `main` (golden-path-go runs `oasdiff` and `buf breaking`).
-- [ ] The REST and GraphQL todo/user list operations disagree on negative offsets (users clamp to 0, todos are rejected by the contract's `minimum`). Pick one rule and put it in the contract.
+- [ ] `GetUserListHandler` clamps a negative offset to 0 while `GetTodoListHandler` does not; the OpenAPI contract rejects it for both (`minimum: 0`), so the clamp is dead code behind the generated validators. Remove it or keep the rule in one place.
 
 ## CI/CD
 
@@ -36,5 +36,5 @@ original list.
 
 ## Tests
 
-- [ ] `TestAuthHandler` inserts the shared test user on every authenticated request; with many hosts running in parallel this occasionally fails with a `duplicate key value violates unique constraint "IX_Users_Email"` (seen once in a full run). Seed the user once per database instead.
+- [ ] `TestAuthHandler` inserts the shared test user on every authenticated request; with many hosts running in parallel this occasionally fails with a `duplicate key value violates unique constraint "IX_Users_Email"` (seen once in a full run on a developer machine, although the insert already uses `ON CONFLICT DO NOTHING`; not reproduced on rerun). Seed the user once per database instead.
 - [ ] Several assertions match FluentValidation's English messages, so the suite fails on a machine with a non-English culture (it passes with `LANG=en_US.UTF-8 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`). Pin the culture for the test run or assert on the property name only.

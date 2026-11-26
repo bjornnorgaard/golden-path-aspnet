@@ -66,11 +66,11 @@ access-denied routes and the health probes (`/healthz`, `/readyz` and the standa
 
 gRPC is the third transport over the same handlers. The contracts are
 `src/WebApi/Contracts/Grpc/goldenpath/{todos,users}/v1/*.proto` (the same `.proto` files as
-[golden-path-go](../golden-path-go), so one client works against both).
+[golden-path-go](https://github.com/bjornnorgaard/golden-path-go), so one client works against both).
 
 - **Enabling:** gRPC needs HTTP/2, which Kestrel only offers on a dedicated cleartext endpoint, so it is
   off until `Grpc:Port` is set (`Grpc__Port=9090`). The configured HTTP addresses (`URLS` /
-  `HTTP_PORTS`) keep serving REST and GraphQL. Terminate TLS in front of the gRPC port, as for HTTP.
+  `HTTP_PORTS`) keep serving REST and GraphQL. Terminate TLS in front of the app: enabling gRPC rejects `https` URLs and `HTTPS_PORTS` (the app has no HTTPS support) instead of silently serving them as plaintext. The gRPC port is a full HTTP/2 listener on all interfaces that also serves REST and GraphQL, so expose it only where you would expose the HTTP port.
   `Grpc:ReflectionEnabled=true` adds gRPC reflection (still authenticated).
 - **Authentication:** the same cookie session as everywhere else; send it as `cookie` metadata. Unlike
   browsers, gRPC clients are answered with `401` (`UNAUTHENTICATED`) instead of a redirect to `/login`.
@@ -81,7 +81,7 @@ gRPC is the third transport over the same handlers. The contracts are
   `INTERNAL` (the detail goes to the log and trace).
 
 ```bash
-Grpc__Port=9090 dotnet run --project src/WebApi
+Grpc__ReflectionEnabled=true Grpc__Port=9090 dotnet run --project WebApi   # reflection lets grpcurl discover the contract
 grpcurl -plaintext -H "Cookie: $COOKIE" -d '{"title":"hello"}' localhost:9090 goldenpath.todos.v1.TodosService/CreateTodo
 ```
 
@@ -94,7 +94,8 @@ dashboard) — the app itself runs on the host:
 
 ```bash
 docker compose up -d
-dotnet run --project src/WebApi
+cd src
+dotnet run --project WebApi
 ```
 
 The app listens on `http://localhost:5200` by default. The Aspire dashboard (logs/traces/spans) is
@@ -109,11 +110,11 @@ that section), so Google or Facebook are the simpler choice for local developmen
 ### Common commands
 
 ```bash
-dotnet restore src/GoldenPathAspnet.slnx
-dotnet build src/GoldenPathAspnet.slnx --no-restore
-dotnet test --solution src/GoldenPathAspnet.slnx --no-build
-dotnet run --project src/WebApi/WebApi.csproj
-dotnet tool restore --tool-manifest src/dotnet-tools.json   # dotnet-ef, for migrations
+dotnet restore GoldenPathAspnet.slnx
+dotnet build GoldenPathAspnet.slnx --no-restore
+dotnet test --solution GoldenPathAspnet.slnx --no-build
+dotnet run --project WebApi/WebApi.csproj
+dotnet tool restore --tool-manifest dotnet-tools.json   # dotnet-ef, for migrations
 ```
 
 Integration tests require Docker (Testcontainers starts PostgreSQL for them). See
@@ -121,7 +122,7 @@ Integration tests require Docker (Testcontainers starts PostgreSQL for them). Se
 
 ## Authentication
 
-Every request into the service — REST endpoints, GraphQL, the Hangfire dashboard, and the
+Every request into the service — REST endpoints, GraphQL, gRPC, the Hangfire dashboard, and the
 Scalar/OpenAPI docs — requires an authenticated session.
 
 Google is the only provider wired up today - `Program.cs` calls `AddGoogleAuthentication()` and

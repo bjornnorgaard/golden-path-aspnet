@@ -18,18 +18,18 @@ This repository is a .NET 10 ASP.NET Core minimal API reference application: RES
 
 ## Prerequisites
 
-- Use the SDK pinned in `global.json` (currently .NET 10).
-- Run commands from the repository root; the paths below are relative to it.
+- Use the SDK pinned in `src/global.json` (currently .NET 10).
+- Run `dotnet` commands from `src/`: `global.json` (SDK pin and the Microsoft.Testing.Platform runner setting that `dotnet test --solution` needs) lives there, and the paths below are relative to it.
 - Docker must be available to run the integration tests because they start PostgreSQL with Testcontainers.
 
 ## Common commands
 
 ```bash
-dotnet restore src/GoldenPathAspnet.slnx
-dotnet build src/GoldenPathAspnet.slnx --no-restore
-dotnet test --solution src/GoldenPathAspnet.slnx --no-build
-dotnet run --project src/WebApi/WebApi.csproj
-dotnet tool restore --tool-manifest src/dotnet-tools.json
+dotnet restore GoldenPathAspnet.slnx
+dotnet build GoldenPathAspnet.slnx --no-restore
+dotnet test --solution GoldenPathAspnet.slnx --no-build
+dotnet run --project WebApi/WebApi.csproj
+dotnet tool restore --tool-manifest dotnet-tools.json
 ```
 
 Run `dotnet format` only when intentionally applying repository-wide formatting; avoid unrelated formatting churn.

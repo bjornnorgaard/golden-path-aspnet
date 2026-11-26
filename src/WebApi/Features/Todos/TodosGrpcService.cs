@@ -36,8 +36,8 @@ internal sealed class TodosGrpcService(
     public override async Task<CreateTodoResponse> CreateTodo(CreateTodoRequest request, ServerCallContext context)
     {
         var ct = context.CancellationToken;
-        var rest = new Rest.CreateTodoRequest { Title = request.Title, DueBy = request.DueBy?.ToDateTimeOffset() };
-        await ValidateAsync(createValidator, rest, ct);
+        var rest = new Rest.CreateTodoRequest { Title = request.Title, DueBy = GrpcErrors.ToDateTimeOffset(request.DueBy, "dueBy") };
+        await GrpcErrors.ValidateAsync(createValidator, rest, ct);
         var dueBy = rest.DueBy.ToUtcDueBy();
 
         var result = await create.HandleAsync(new CreateTodoHandler.Command { Title = request.Title, DueBy = dueBy }, ct);
@@ -63,7 +63,7 @@ internal sealed class TodosGrpcService(
         var ct = context.CancellationToken;
         int? limit = request.HasLimit ? request.Limit : null;
         int? offset = request.HasOffset ? request.Offset : null;
-        await ValidateAsync(listValidator, new Rest.GetTodoListRequest { Limit = limit, Offset = offset }, ct);
+        await GrpcErrors.ValidateAsync(listValidator, new Rest.GetTodoListRequest { Limit = limit, Offset = offset }, ct);
 
         var result = await list.HandleAsync(new GetTodoListHandler.Command { Limit = limit, Offset = offset }, ct);
 
@@ -75,15 +75,15 @@ internal sealed class TodosGrpcService(
     public override async Task<UpdateTodoResponse> UpdateTodo(UpdateTodoRequest request, ServerCallContext context)
     {
         var ct = context.CancellationToken;
-        var todoId = ParseId(request.Id);
         var rest = new Rest.UpdateTodoRequest
         {
             Id = request.Id,
             Title = request.Title,
-            DueBy = request.DueBy?.ToDateTimeOffset(),
+            DueBy = GrpcErrors.ToDateTimeOffset(request.DueBy, "dueBy"),
             IsComplete = request.IsComplete
         };
-        await ValidateAsync(updateValidator, rest, ct);
+        await GrpcErrors.ValidateAsync(updateValidator, rest, ct);
+        var todoId = ParseId(request.Id);
 
         var result = await update.HandleAsync(new UpdateTodoHandler.Command
         {
@@ -123,15 +123,6 @@ internal sealed class TodosGrpcService(
 
         Activity.Current?.SetTodoId(todoId);
         return todoId;
-    }
-
-    private static async Task ValidateAsync<T>(IValidator<T> validator, T request, CancellationToken ct)
-    {
-        var validation = await validator.ValidateAsync(request, ct);
-        if (!validation.IsValid)
-        {
-            throw GrpcErrors.InvalidArgument(validation);
-        }
     }
 
     private static RpcException TodoNotFound() => GrpcErrors.NotFound("Todo was not found.");
