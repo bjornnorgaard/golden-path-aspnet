@@ -47,6 +47,21 @@ public static class AuthenticationConfiguration
                     cookie.LoginPath = "/login";
                     cookie.AccessDeniedPath = "/access-denied";
                     cookie.ExpireTimeSpan = TimeSpan.FromDays(14);
+
+                    // A gRPC client cannot follow a redirect to a login page: answer 401, which gRPC
+                    // clients surface as UNAUTHENTICATED. Everything else keeps the framework default
+                    // (which already answers 401 instead of a redirect for API/AJAX requests).
+                    var defaultRedirectToLogin = cookie.Events.OnRedirectToLogin;
+                    cookie.Events.OnRedirectToLogin = context =>
+                    {
+                        if (context.Request.ContentType?.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            return Task.CompletedTask;
+                        }
+
+                        return defaultRedirectToLogin(context);
+                    };
                 });
 
             builder.Services.AddAuthorizationBuilder()

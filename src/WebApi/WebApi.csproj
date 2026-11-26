@@ -13,6 +13,10 @@
         <PackageReference Include="FluentValidation"/>
         <PackageReference Include="Hangfire.AspNetCore"/>
         <PackageReference Include="Hangfire.PostgreSql"/>
+        <PackageReference Include="Grpc.AspNetCore"/>
+        <PackageReference Include="Grpc.AspNetCore.HealthChecks"/>
+        <PackageReference Include="Grpc.AspNetCore.Server.Reflection"/>
+        <PackageReference Include="Grpc.StatusProto"/>
         <PackageReference Include="HotChocolate.AspNetCore"/>
         <PackageReference Include="HotChocolate.Data"/>
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Facebook"/>
@@ -41,6 +45,12 @@
         <!-- Needed to source-generated types for configuration -->
         <AdditionalFiles Include="appsettings.json" />
         <AdditionalFiles Include="Contracts/**/*.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The gRPC contracts are the source of truth too: Grpc.Tools generates messages and the abstract
+             service base classes from them at build time (nothing generated is committed). -->
+        <Protobuf Include="Contracts/Grpc/**/*.proto" ProtoRoot="Contracts/Grpc" GrpcServices="Both"/>
     </ItemGroup>
 
     <ItemGroup>

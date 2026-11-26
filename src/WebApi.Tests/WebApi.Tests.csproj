@@ -6,6 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Grpc.HealthCheck"/>
+        <PackageReference Include="Grpc.Net.Client"/>
+        <PackageReference Include="Grpc.Reflection"/>
         <PackageReference Include="Microsoft.AspNetCore.TestHost"/>
         <PackageReference Include="OpenTelemetry"/>
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol"/>
